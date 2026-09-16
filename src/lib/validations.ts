@@ -29,7 +29,13 @@ export const eventProjectSchema = z.object({
   clientName: z.string().min(1, 'El nombre del cliente es requerido'),
   eventName: z.string().min(1, 'El nombre del evento es requerido'),
   eventType: z.string().default('boda'),
-  eventDate: z.coerce.date().optional().nullable(),
+  eventDate: z.coerce
+    .date()
+    .optional()
+    .nullable()
+    .refine((date) => !date || date.getTime() > Date.now(), {
+      message: 'La fecha del evento debe ser posterior a hoy',
+    }),
   location: z.string().optional(),
   isPublished: z.boolean().optional(),
   accessPassword: z.string().optional(),

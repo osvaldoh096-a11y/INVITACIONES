@@ -35,10 +35,18 @@ interface EventsPanelProps {
   onSelectEvent?: (eventCode: string | null) => void;
 }
 
+// Solo se permiten fechas futuras (posteriores a hoy) para el evento.
+function tomorrowIsoDate(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function EventsPanel({ onSelectEvent }: EventsPanelProps) {
   const [events, setEvents] = useState<(EventProject & { _count?: { rsvps: number } })[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const minEventDate = tomorrowIsoDate();
 
   const {
     handleSubmit,
@@ -141,8 +149,8 @@ export default function EventsPanel({ onSelectEvent }: EventsPanelProps) {
               <FormField
                 label="Fecha del evento"
                 name="eventDate"
-                type="text"
-                placeholder="AAAA-MM-DD"
+                type="date"
+                min={minEventDate}
                 register={register}
                 errors={errors}
               />

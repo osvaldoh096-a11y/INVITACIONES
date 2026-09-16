@@ -9,7 +9,7 @@ import type {
 interface FormFieldProps<T extends Record<string, any>> {
   label: string;
   name: Path<T>;
-  type?: 'text' | 'email' | 'password' | 'url' | 'color' | 'time';
+  type?: 'text' | 'email' | 'password' | 'url' | 'color' | 'time' | 'date';
   placeholder?: string;
   register: UseFormRegister<T>;
   errors: FieldErrors<T>;
@@ -17,6 +17,8 @@ interface FormFieldProps<T extends Record<string, any>> {
   rows?: number;
   required?: boolean;
   disabled?: boolean;
+  min?: string;
+  max?: string;
 }
 
 export function FormField<T extends Record<string, any>>({
@@ -30,6 +32,8 @@ export function FormField<T extends Record<string, any>>({
   rows = 4,
   required = false,
   disabled = false,
+  min,
+  max,
 }: FormFieldProps<T>) {
   const error = errors[name];
   const errorMessage = error?.message as string | undefined;
@@ -55,6 +59,8 @@ export function FormField<T extends Record<string, any>>({
           type={type}
           placeholder={placeholder}
           disabled={disabled}
+          min={min}
+          max={max}
           {...register(name)}
           className={errorMessage ? 'border-red-500' : ''}
         />
