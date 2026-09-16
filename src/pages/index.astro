@@ -1,0 +1,12 @@
+---
+import '../styles/global.css';
+import { getSession } from '../lib/auth';
+
+const session = await getSession(Astro);
+
+if (session) {
+  return Astro.redirect('/admin');
+}
+
+return Astro.redirect('/login');
+---

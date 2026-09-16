@@ -1,0 +1,27 @@
+---
+import '../styles/global.css';
+import AdminDashboard from '../components/AdminDashboard';
+import { Toaster } from '../components/ui/sonner';
+import { getSession } from '../lib/auth';
+
+// Verifica que haya una sesión válida y firmada.
+const session = await getSession(Astro);
+
+if (!session) {
+  return Astro.redirect('/login');
+}
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Panel de eventos — Invitaciones digitales</title>
+  </head>
+
+  <body>
+    <AdminDashboard client:load />
+    <Toaster client:only="react" />
+  </body>
+</html>

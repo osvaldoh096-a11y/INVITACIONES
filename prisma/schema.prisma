@@ -1,0 +1,97 @@
+// Esquema de datos — Sistema de invitaciones digitales (AMAL AGENDA / NayarSound)
+// Adaptado de weddingly-builder (MIT License, © 2025 Danny Dwi Cahyono)
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Cuenta interna del negocio (tú y tu empleada). Los clientes finales
+// e invitados NUNCA inician sesión: solo llenan el formulario RSVP público.
+model AdminUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String // formato: pbkdf2$<iteraciones>$<saltBase64>$<hashBase64>
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  eventsCreated EventProject[]
+}
+
+// Un "EventProject" = un evento de un cliente (una boda, un XV años, un
+// evento corporativo, etc.). Equivale al ID_EVENTO que se escribe en Sheets.
+model EventProject {
+  id          String   @id @default(cuid())
+  eventCode   String   @unique // slug público y legible; es el ID_EVENTO
+  clientName  String // quién te contrató (para tu propia organización)
+  eventName   String // nombre a mostrar, ej. "Boda de Ana & Luis"
+  eventType   String   @default("boda") // boda, xv, corporativo, otro
+  eventDate   DateTime?
+  location    String?
+
+  isPublished    Boolean @default(true)
+  accessPassword String? // opcional, para invitaciones "privadas"
+
+  createdById String
+  createdBy   AdminUser @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions EventSession[]
+  rsvps    RSVP[]
+
+  @@index([createdById])
+}
+
+// Sub-horarios dentro de un mismo evento (ceremonia, recepción, etc.)
+// Opcional: no todos los eventos lo necesitan.
+model EventSession {
+  id      String   @id @default(cuid())
+  eventId String
+  event   EventProject @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  title    String
+  date     DateTime
+  time     String
+  location String
+  address  String?
+  order    Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+}
+
+// Cada respuesta RSVP. El campo "id" es el ID_RESPUESTA.
+model RSVP {
+  id      String   @id @default(cuid())
+  eventId String
+  event   EventProject @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  fullName            String
+  phone               String?
+  email               String?
+  attending           Boolean
+  companionsCount     Int      @default(0)
+  companionNames      String? // nombres separados por coma
+  dietaryRestrictions String?
+  message             String?
+
+  // Estado de sincronización con Google Sheets (no bloquea el RSVP si falla)
+  syncedToSheets Boolean   @default(false)
+  syncedAt       DateTime?
+  syncError      String?
+
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
+}

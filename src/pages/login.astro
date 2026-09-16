@@ -1,0 +1,28 @@
+---
+import '../styles/global.css';
+import AuthForm from '../components/AuthForm';
+import { Toaster } from '../components/ui/sonner';
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Panel interno — Invitaciones digitales</title>
+  </head>
+
+  <body>
+    <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">Panel de eventos</h1>
+          <p class="text-gray-600">Administra tus clientes, RSVPs y sincronización con Sheets</p>
+        </div>
+
+        <AuthForm client:load />
+      </div>
+    </div>
+    <Toaster client:only="react" />
+  </body>
+</html>
