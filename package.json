@@ -10,8 +10,8 @@
     "seed:admin": "tsx scripts/seed-admin.ts"
   },
   "dependencies": {
-    "@astrojs/node": "^11.1.6",
     "@astrojs/react": "^6.0.6",
+    "@astrojs/vercel": "^11.0.10",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^6.18.0",
