@@ -99,6 +99,25 @@ npm run preview   # probar el build de producción
    }
    ```
 
+   Si `attending` es `true`, la respuesta (`201`) incluye un QR único por
+   cada persona confirmada (el titular + cada nombre en `companionNames`):
+
+   ```json
+   {
+     "success": true,
+     "rsvp": { "...": "..." },
+     "guests": [
+       { "fullName": "Nombre del invitado", "qrUrl": "https://tu-dominio.com/api/qr/xxxxxxxx" },
+       { "fullName": "Nombre 1", "qrUrl": "https://tu-dominio.com/api/qr/yyyyyyyy" }
+     ]
+   }
+   ```
+
+   Muestra esas imágenes (`<img src="qrUrl">`) en la misma pantalla de
+   Framer justo después de confirmar, para que el invitado las guarde o
+   les tome captura ahí mismo — es la entrega principal, inmediata y sin
+   depender de ningún servicio externo.
+
 3. Configura `FRAMER_ALLOWED_ORIGIN` en tu `.env` de producción con el
    dominio exacto de tu sitio de Framer, para que el navegador del
    invitado no bloquee la petición (CORS).
@@ -107,6 +126,16 @@ npm run preview   # probar el build de producción
    evento dinámicamente en vez de escribirlo a mano en el diseño, puedes
    pedirlos con un GET a `/api/events/[eventCode]` (endpoint público, de
    solo lectura).
+
+## Entrega de QR por correo (respaldo)
+
+Si el invitado dejó su `email` en el formulario, además de mostrarse en
+pantalla, se le manda automáticamente un correo con sus QR (por si pierde
+la pantalla de confirmación). Configura `RESEND_API_KEY` y
+`RESEND_FROM_EMAIL` — ver [`.env.example`](./.env.example) para el paso a
+paso (cuenta gratuita en resend.com + verificar tu dominio). Si no está
+configurado, o el invitado no dejó correo, el RSVP y sus QR se guardan
+igual — el correo es solo un respaldo, nunca la fuente de verdad.
 
 ## Conectar Google Sheets
 

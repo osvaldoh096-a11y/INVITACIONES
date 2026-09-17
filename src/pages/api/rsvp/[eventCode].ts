@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import prisma from '../../../lib/prisma';
 import { rsvpSubmitSchema } from '../../../lib/validations';
 import { appendRsvpToSheet } from '../../../lib/sheets';
+import { sendRsvpConfirmationEmail } from '../../../lib/email';
 
 /**
  * Endpoint PÚBLICO que el formulario embebido/conectado desde Framer llama
@@ -95,7 +96,47 @@ export const POST: APIRoute = async ({ params, request }) => {
       },
     });
 
-    return new Response(JSON.stringify({ success: true, rsvp }), {
+    // Un QR único por persona confirmada (titular + cada acompañante), solo
+    // si sí va a asistir — no tiene sentido generar código de acceso para
+    // quien avisó que no viene.
+    const guestNames = data.attending
+      ? [
+          data.fullName,
+          ...(data.companionNames
+            ? data.companionNames.split(',').map((n) => n.trim()).filter(Boolean)
+            : []),
+        ]
+      : [];
+
+    const origin = new URL(request.url).origin;
+    let guests: { fullName: string; qrUrl: string }[] = [];
+
+    if (guestNames.length > 0) {
+      const created = await prisma.$transaction(
+        guestNames.map((fullName) =>
+          prisma.rsvpGuest.create({
+            data: { rsvpId: rsvp.id, fullName, qrToken: crypto.randomUUID() },
+          }),
+        ),
+      );
+      guests = created.map((g) => ({
+        fullName: g.fullName,
+        qrUrl: `${origin}/api/qr/${g.qrToken}`,
+      }));
+
+      // Igual que Sheets: el correo es un respaldo, nunca la fuente de
+      // verdad. Si el invitado no dejó email o el envío falla, el RSVP y
+      // sus QR ya quedaron guardados y se le mostraron en pantalla.
+      if (data.email) {
+        await sendRsvpConfirmationEmail({
+          to: data.email,
+          eventName: event.eventName,
+          guests,
+        });
+      }
+    }
+
+    return new Response(JSON.stringify({ success: true, rsvp, guests }), {
       status: 201,
       headers,
     });

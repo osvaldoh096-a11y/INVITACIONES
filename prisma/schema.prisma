@@ -93,5 +93,25 @@ model RSVP {
 
   createdAt DateTime @default(now())
 
+  guests RsvpGuest[]
+
   @@index([eventId])
+}
+
+// Un QR único por persona confirmada (el titular + cada acompañante), para
+// que cada quien tenga su propio código de acceso/check-in el día del evento.
+model RsvpGuest {
+  id     String @id @default(cuid())
+  rsvpId String
+  rsvp   RSVP   @relation(fields: [rsvpId], references: [id], onDelete: Cascade)
+
+  fullName String
+  qrToken  String @unique // valor codificado en el QR; imposible de adivinar
+
+  checkedIn   Boolean   @default(false)
+  checkedInAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([rsvpId])
 }
