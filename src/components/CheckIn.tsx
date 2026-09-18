@@ -3,9 +3,13 @@ import { useEffect, useRef, useState } from 'react';
 type ScanState =
   | { kind: 'idle' }
   | { kind: 'checking' }
-  | { kind: 'ok'; fullName: string }
-  | { kind: 'repeat'; fullName: string; checkedInAt: string }
+  | { kind: 'ok'; fullName: string; checkedInAt: string; checkInCount: number }
+  | { kind: 'repeat'; fullName: string; checkedInAt: string; checkInCount: number }
   | { kind: 'error'; message: string };
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+}
 
 const READER_ID = 'qr-reader';
 // Cuánto se queda congelado el resultado en pantalla antes de seguir
@@ -89,9 +93,19 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
       if (!res.ok) {
         setScan({ kind: 'error', message: data.error || 'Código no válido' });
       } else if (data.alreadyCheckedIn) {
-        setScan({ kind: 'repeat', fullName: data.guest.fullName, checkedInAt: data.guest.checkedInAt });
+        setScan({
+          kind: 'repeat',
+          fullName: data.guest.fullName,
+          checkedInAt: data.guest.checkedInAt,
+          checkInCount: data.guest.checkInCount,
+        });
       } else {
-        setScan({ kind: 'ok', fullName: data.guest.fullName });
+        setScan({
+          kind: 'ok',
+          fullName: data.guest.fullName,
+          checkedInAt: data.guest.checkedInAt,
+          checkInCount: data.guest.checkInCount,
+        });
       }
     } catch {
       setScan({ kind: 'error', message: 'No se pudo conectar. Intenta de nuevo.' });
@@ -131,9 +145,9 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
               <div style={styles.overlayName}>{scan.fullName}</div>
             )}
             <div style={styles.overlayMessage}>
-              {scan.kind === 'ok' && '¡Bienvenido! Entrada registrada.'}
+              {scan.kind === 'ok' && `¡Bienvenido! Entrada registrada a las ${formatTime(scan.checkedInAt)}.`}
               {scan.kind === 'repeat' &&
-                `Reingreso — entró antes a las ${new Date(scan.checkedInAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`}
+                `Reingreso #${scan.checkInCount} — a las ${formatTime(scan.checkedInAt)}`}
               {scan.kind === 'error' && scan.message}
             </div>
             <div style={styles.overlayHint}>Toca la pantalla para seguir escaneando</div>

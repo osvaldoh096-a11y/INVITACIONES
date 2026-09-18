@@ -108,8 +108,9 @@ model RsvpGuest {
   fullName String
   qrToken  String @unique // valor codificado en el QR; imposible de adivinar
 
-  checkedIn   Boolean   @default(false)
-  checkedInAt DateTime?
+  checkedIn      Boolean   @default(false)
+  checkedInAt    DateTime? // hora de la ÚLTIMA entrada (se actualiza en cada reingreso)
+  checkInCount   Int       @default(0) // cuántas veces ha entrado (sale y regresa cuenta de nuevo)
 
   createdAt DateTime @default(now())
 

@@ -46,27 +46,27 @@ export const POST: APIRoute = async ({ params, request }) => {
     );
   }
 
-  if (guest.checkedIn) {
-    return new Response(
-      JSON.stringify({
-        success: true,
-        alreadyCheckedIn: true,
-        guest: { fullName: guest.fullName, checkedInAt: guest.checkedInAt },
-      }),
-      { status: 200, headers },
-    );
-  }
-
+  // Cada escaneo cuenta como una entrada más — un invitado que sale y
+  // regresa (al coche, a fumar, etc.) puede volver a entrar sin problema;
+  // esto solo lleva la cuenta de cuántas veces y a qué hora, no bloquea.
   const updated = await prisma.rsvpGuest.update({
     where: { id: guest.id },
-    data: { checkedIn: true, checkedInAt: new Date() },
+    data: {
+      checkedIn: true,
+      checkedInAt: new Date(),
+      checkInCount: { increment: 1 },
+    },
   });
 
   return new Response(
     JSON.stringify({
       success: true,
-      alreadyCheckedIn: false,
-      guest: { fullName: updated.fullName, checkedInAt: updated.checkedInAt },
+      alreadyCheckedIn: updated.checkInCount > 1,
+      guest: {
+        fullName: updated.fullName,
+        checkedInAt: updated.checkedInAt,
+        checkInCount: updated.checkInCount,
+      },
     }),
     { status: 200, headers },
   );
