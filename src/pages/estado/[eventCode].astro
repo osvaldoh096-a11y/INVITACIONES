@@ -1,0 +1,21 @@
+---
+import '../../styles/global.css';
+import EventStatus from '../../components/EventStatus';
+import { Toaster } from '../../components/ui/sonner';
+
+const { eventCode } = Astro.params;
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Estado del evento — Invitaciones digitales</title>
+  </head>
+
+  <body>
+    <EventStatus eventCode={eventCode as string} client:load />
+    <Toaster client:only="react" />
+  </body>
+</html>

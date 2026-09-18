@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { Plus, Copy, ExternalLink } from 'lucide-react';
+import { Plus, Copy, ExternalLink, Link as LinkIcon } from 'lucide-react';
 import { eventProjectSchema, type EventProjectFormData, type EventProject } from '../lib/validations';
 import { eventService } from '../lib/api';
 
@@ -91,6 +91,12 @@ export default function EventsPanel({ onSelectEvent }: EventsPanelProps) {
     const url = `${window.location.origin}/api/rsvp/${eventCode}`;
     navigator.clipboard.writeText(url);
     toast.success('Endpoint copiado — pégalo en tu formulario de Framer');
+  };
+
+  const copyStatusLink = (eventCode: string) => {
+    const url = `${window.location.origin}/estado/${eventCode}`;
+    navigator.clipboard.writeText(url);
+    toast.success('Link copiado — mándaselo a tu cliente para que vea sus confirmaciones');
   };
 
   if (loading) return <div className="text-center py-10">Cargando eventos...</div>;
@@ -228,6 +234,14 @@ export default function EventsPanel({ onSelectEvent }: EventsPanelProps) {
                           title="Copiar endpoint público para el formulario de Framer"
                         >
                           <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyStatusLink(event.eventCode)}
+                          title="Copiar link de estado para tu cliente"
+                        >
+                          <LinkIcon className="h-4 w-4" />
                         </Button>
                         <a
                           href={`/api/events/${event.eventCode}`}
