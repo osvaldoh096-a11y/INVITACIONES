@@ -1,6 +1,8 @@
+import nodemailer from 'nodemailer';
+
 /**
- * Envío del correo de respaldo con los QR de confirmación, vía Resend
- * (https://resend.com — tiene nivel gratuito, sin trámites de negocio).
+ * Envío del correo de respaldo con los QR de confirmación, directo desde
+ * tu cuenta de Gmail (vía SMTP + "contraseña de aplicación").
  *
  * Igual que con Google Sheets: esto es un "espejo" de entrega, nunca la
  * fuente de verdad. Si el correo falla (o no está configurado, o el
@@ -8,11 +10,10 @@
  * mostró en pantalla — este correo es solo un respaldo por si lo perdió.
  *
  * Variables de entorno requeridas:
- * - RESEND_API_KEY
- * - RESEND_FROM_EMAIL   (debe ser de un dominio verificado en Resend;
- *                        mientras no verifiques uno, usa "onboarding@resend.dev",
- *                        que Resend acepta sin verificación pero solo para
- *                        pruebas — no lo uses para invitados reales).
+ * - GMAIL_USER            (tu cuenta de Gmail, ej. tunegocio@gmail.com)
+ * - GMAIL_APP_PASSWORD    (contraseña de aplicación de 16 caracteres, NO
+ *                          tu contraseña normal de Gmail — ver .env.example
+ *                          para cómo generarla)
  */
 
 interface QrGuest {
@@ -22,8 +23,18 @@ interface QrGuest {
 
 function isEmailConfigured(): boolean {
   return Boolean(
-    import.meta.env.RESEND_API_KEY && import.meta.env.RESEND_FROM_EMAIL,
+    import.meta.env.GMAIL_USER && import.meta.env.GMAIL_APP_PASSWORD,
   );
+}
+
+function getTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: import.meta.env.GMAIL_USER,
+      pass: import.meta.env.GMAIL_APP_PASSWORD,
+    },
+  });
 }
 
 function buildHtml(eventName: string, guests: QrGuest[]): string {
@@ -55,29 +66,17 @@ export async function sendRsvpConfirmationEmail(params: {
   if (!isEmailConfigured()) {
     return {
       ok: false,
-      error: 'Email no configurado (faltan RESEND_API_KEY / RESEND_FROM_EMAIL).',
+      error: 'Email no configurado (faltan GMAIL_USER / GMAIL_APP_PASSWORD).',
     };
   }
 
   try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${import.meta.env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: import.meta.env.RESEND_FROM_EMAIL,
-        to: params.to,
-        subject: `Tu confirmación para ${params.eventName}`,
-        html: buildHtml(params.eventName, params.guests),
-      }),
+    await getTransporter().sendMail({
+      from: `"${params.eventName}" <${import.meta.env.GMAIL_USER}>`,
+      to: params.to,
+      subject: `Tu confirmación para ${params.eventName}`,
+      html: buildHtml(params.eventName, params.guests),
     });
-
-    if (!res.ok) {
-      const body = await res.text();
-      return { ok: false, error: `Resend respondió ${res.status}: ${body}` };
-    }
 
     return { ok: true };
   } catch (err) {

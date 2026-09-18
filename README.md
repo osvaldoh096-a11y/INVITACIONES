@@ -131,11 +131,13 @@ npm run preview   # probar el build de producción
 
 Si el invitado dejó su `email` en el formulario, además de mostrarse en
 pantalla, se le manda automáticamente un correo con sus QR (por si pierde
-la pantalla de confirmación). Configura `RESEND_API_KEY` y
-`RESEND_FROM_EMAIL` — ver [`.env.example`](./.env.example) para el paso a
-paso (cuenta gratuita en resend.com + verificar tu dominio). Si no está
-configurado, o el invitado no dejó correo, el RSVP y sus QR se guardan
-igual — el correo es solo un respaldo, nunca la fuente de verdad.
+la pantalla de confirmación) — enviado desde tu propia cuenta de Gmail.
+Configura `GMAIL_USER` y `GMAIL_APP_PASSWORD` — ver
+[`.env.example`](./.env.example) para el paso a paso (activar
+verificación en dos pasos + generar una contraseña de aplicación, ambos
+gratis y en minutos). Si no está configurado, o el invitado no dejó
+correo, el RSVP y sus QR se guardan igual — el correo es solo un
+respaldo, nunca la fuente de verdad.
 
 ## Conectar Google Sheets
 
