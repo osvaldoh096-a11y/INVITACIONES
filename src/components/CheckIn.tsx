@@ -124,7 +124,7 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
           <div style={overlayStyle(scan.kind)} onClick={resumeScanning}>
             <div style={styles.overlayIcon}>
               {scan.kind === 'ok' && '✅'}
-              {scan.kind === 'repeat' && '⚠️'}
+              {scan.kind === 'repeat' && '🔄'}
               {scan.kind === 'error' && '❌'}
             </div>
             {(scan.kind === 'ok' || scan.kind === 'repeat') && (
@@ -132,7 +132,8 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
             )}
             <div style={styles.overlayMessage}>
               {scan.kind === 'ok' && '¡Bienvenido! Entrada registrada.'}
-              {scan.kind === 'repeat' && 'Ya había entrado antes.'}
+              {scan.kind === 'repeat' &&
+                `Reingreso — entró antes a las ${new Date(scan.checkedInAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`}
               {scan.kind === 'error' && scan.message}
             </div>
             <div style={styles.overlayHint}>Toca la pantalla para seguir escaneando</div>
@@ -166,7 +167,7 @@ function bannerStyle(kind: ScanState['kind']): React.CSSProperties {
 function overlayStyle(kind: ScanState['kind']): React.CSSProperties {
   const colors: Record<string, { bg: string; text: string }> = {
     ok: { bg: '#166534', text: 'white' },
-    repeat: { bg: '#a16207', text: 'white' },
+    repeat: { bg: '#1d4ed8', text: 'white' },
     error: { bg: '#991b1b', text: 'white' },
   };
   const c = colors[kind] ?? colors.error;
