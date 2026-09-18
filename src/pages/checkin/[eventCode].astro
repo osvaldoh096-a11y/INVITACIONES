@@ -1,0 +1,19 @@
+---
+import '../../styles/global.css';
+import CheckIn from '../../components/CheckIn';
+
+const { eventCode } = Astro.params;
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Check-in — Invitaciones digitales</title>
+  </head>
+
+  <body>
+    <CheckIn eventCode={eventCode as string} client:load />
+  </body>
+</html>

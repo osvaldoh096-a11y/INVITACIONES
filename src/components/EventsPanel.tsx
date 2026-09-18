@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { Plus, Copy, ExternalLink, Link as LinkIcon } from 'lucide-react';
+import { Plus, Copy, ExternalLink, Link as LinkIcon, QrCode } from 'lucide-react';
 import { eventProjectSchema, type EventProjectFormData, type EventProject } from '../lib/validations';
 import { eventService } from '../lib/api';
 
@@ -97,6 +97,12 @@ export default function EventsPanel({ onSelectEvent }: EventsPanelProps) {
     const url = `${window.location.origin}/estado/${eventCode}`;
     navigator.clipboard.writeText(url);
     toast.success('Link copiado — mándaselo a tu cliente para que vea sus confirmaciones');
+  };
+
+  const copyCheckinLink = (eventCode: string) => {
+    const url = `${window.location.origin}/checkin/${eventCode}`;
+    navigator.clipboard.writeText(url);
+    toast.success('Link de check-in copiado — quien reciba en la puerta lo abre desde su celular');
   };
 
   if (loading) return <div className="text-center py-10">Cargando eventos...</div>;
@@ -242,6 +248,14 @@ export default function EventsPanel({ onSelectEvent }: EventsPanelProps) {
                           title="Copiar link de estado para tu cliente"
                         >
                           <LinkIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyCheckinLink(event.eventCode)}
+                          title="Copiar link de check-in (lector de QR) para la entrada del evento"
+                        >
+                          <QrCode className="h-4 w-4" />
                         </Button>
                         <a
                           href={`/api/events/${event.eventCode}`}
