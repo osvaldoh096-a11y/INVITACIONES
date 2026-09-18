@@ -8,9 +8,9 @@ type ScanState =
   | { kind: 'error'; message: string };
 
 const READER_ID = 'qr-reader';
-// Ignora un mismo código ya procesado por un ratito, para que no se
-// vuelva a disparar mientras el QR sigue frente a la cámara.
-const RESCAN_COOLDOWN_MS = 3000;
+// Cuánto se queda congelado el resultado en pantalla antes de seguir
+// escaneando solo. También se puede saltar antes con el botón.
+const AUTO_RESUME_MS = 3000;
 
 export default function CheckIn({ eventCode }: { eventCode: string }) {
   const [eventName, setEventName] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
 
   const scannerRef = useRef<any>(null);
   const busyRef = useRef(false);
-  const lastTokenRef = useRef<{ token: string; at: number } | null>(null);
+  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetch(`/api/events/${eventCode}`)
@@ -55,6 +55,7 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
 
     return () => {
       cancelled = true;
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
       const scanner = scannerRef.current;
       if (scanner) {
         scanner.stop().catch(() => {});
@@ -64,13 +65,17 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
   }, [eventCode]);
 
   async function handleScan(qrToken: string) {
-    const now = Date.now();
-    const last = lastTokenRef.current;
-    if (busyRef.current) return;
-    if (last && last.token === qrToken && now - last.at < RESCAN_COOLDOWN_MS) return;
-
+    if (busyRef.current) return; // ya está pausado mostrando un resultado
     busyRef.current = true;
-    lastTokenRef.current = { token: qrToken, at: now };
+
+    // Pausa la cámara de verdad: deja de leer hasta que el humano vea
+    // el resultado, en vez de seguir procesando el mismo QR de refilón.
+    try {
+      scannerRef.current?.pause(true);
+    } catch {
+      // si aún no había arrancado, no pasa nada
+    }
+
     setScan({ kind: 'checking' });
 
     try {
@@ -90,12 +95,19 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
       }
     } catch {
       setScan({ kind: 'error', message: 'No se pudo conectar. Intenta de nuevo.' });
-    } finally {
-      setTimeout(() => {
-        busyRef.current = false;
-      }, 1200);
     }
+
+    resumeTimerRef.current = setTimeout(resumeScanning, AUTO_RESUME_MS);
   }
+
+  function resumeScanning() {
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    scannerRef.current?.resume();
+    busyRef.current = false;
+    setScan({ kind: 'idle' });
+  }
+
+  const showResultOverlay = scan.kind === 'ok' || scan.kind === 'repeat' || scan.kind === 'error';
 
   return (
     <div style={styles.page}>
@@ -107,32 +119,71 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
       <div style={styles.cameraWrap}>
         <div id={READER_ID} style={styles.reader} />
         {cameraError && <p style={styles.cameraError}>{cameraError}</p>}
+
+        {showResultOverlay && (
+          <div style={overlayStyle(scan.kind)} onClick={resumeScanning}>
+            <div style={styles.overlayIcon}>
+              {scan.kind === 'ok' && '✅'}
+              {scan.kind === 'repeat' && '⚠️'}
+              {scan.kind === 'error' && '❌'}
+            </div>
+            {(scan.kind === 'ok' || scan.kind === 'repeat') && (
+              <div style={styles.overlayName}>{scan.fullName}</div>
+            )}
+            <div style={styles.overlayMessage}>
+              {scan.kind === 'ok' && '¡Bienvenido! Entrada registrada.'}
+              {scan.kind === 'repeat' && 'Ya había entrado antes.'}
+              {scan.kind === 'error' && scan.message}
+            </div>
+            <div style={styles.overlayHint}>Toca la pantalla para seguir escaneando</div>
+          </div>
+        )}
       </div>
 
-      <div style={bannerStyle(scan.kind)}>
-        {scan.kind === 'idle' && 'Apunta la cámara al código QR del invitado'}
-        {scan.kind === 'checking' && 'Verificando...'}
-        {scan.kind === 'ok' && `✅ ${scan.fullName} — ¡bienvenido!`}
-        {scan.kind === 'repeat' && `⚠️ ${scan.fullName} ya había entrado`}
-        {scan.kind === 'error' && `❌ ${scan.message}`}
-      </div>
+      {!showResultOverlay && (
+        <div style={bannerStyle(scan.kind)}>
+          {scan.kind === 'idle' && 'Apunta la cámara al código QR del invitado'}
+          {scan.kind === 'checking' && 'Verificando...'}
+        </div>
+      )}
     </div>
   );
 }
 
 function bannerStyle(kind: ScanState['kind']): React.CSSProperties {
-  const base: React.CSSProperties = {
+  return {
     marginTop: 16,
     padding: '16px 20px',
     borderRadius: 12,
     fontSize: 18,
     fontWeight: 600,
     textAlign: 'center',
+    background: '#f3f4f6',
+    color: '#374151',
   };
-  if (kind === 'ok') return { ...base, background: '#dcfce7', color: '#166534' };
-  if (kind === 'repeat') return { ...base, background: '#fef9c3', color: '#854d0e' };
-  if (kind === 'error') return { ...base, background: '#fee2e2', color: '#991b1b' };
-  return { ...base, background: '#f3f4f6', color: '#374151' };
+}
+
+function overlayStyle(kind: ScanState['kind']): React.CSSProperties {
+  const colors: Record<string, { bg: string; text: string }> = {
+    ok: { bg: '#166534', text: 'white' },
+    repeat: { bg: '#a16207', text: 'white' },
+    error: { bg: '#991b1b', text: 'white' },
+  };
+  const c = colors[kind] ?? colors.error;
+  return {
+    position: 'absolute',
+    inset: 0,
+    background: c.bg,
+    color: c.text,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 24,
+    textAlign: 'center',
+    cursor: 'pointer',
+  };
 }
 
 const styles: Record<string, React.CSSProperties> = {
@@ -145,7 +196,17 @@ const styles: Record<string, React.CSSProperties> = {
   header: { textAlign: 'center', marginBottom: 16 },
   title: { margin: 0, fontSize: 24 },
   subtitle: { margin: '4px 0 0', color: '#6b7280' },
-  cameraWrap: { borderRadius: 16, overflow: 'hidden', background: '#000' },
-  reader: { width: '100%' },
+  cameraWrap: {
+    position: 'relative',
+    borderRadius: 16,
+    overflow: 'hidden',
+    background: '#000',
+    aspectRatio: '3 / 4',
+  },
+  reader: { width: '100%', height: '100%' },
   cameraError: { color: '#991b1b', padding: 16, background: '#fee2e2', margin: 0 },
+  overlayIcon: { fontSize: 56, lineHeight: 1 },
+  overlayName: { fontSize: 26, fontWeight: 700 },
+  overlayMessage: { fontSize: 16, opacity: 0.9 },
+  overlayHint: { fontSize: 13, opacity: 0.7, marginTop: 12 },
 };
