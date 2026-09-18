@@ -47,6 +47,7 @@ model EventProject {
 
   sessions EventSession[]
   rsvps    RSVP[]
+  invitees Invitee[]
 
   @@index([createdById])
 }
@@ -93,7 +94,37 @@ model RSVP {
 
   createdAt DateTime @default(now())
 
-  guests RsvpGuest[]
+  guests  RsvpGuest[]
+  invitee Invitee?
+
+  @@index([eventId])
+}
+
+// Un renglón de la lista de invitados que TÚ (o tu cliente) precarga antes
+// de mandar las invitaciones — el modelo "lista cerrada con pases
+// limitados" que usa la competencia. Cada invitado/familia tiene su propio
+// link personalizado y un tope de personas que puede confirmar; nadie más
+// puede colarse con ese link.
+model Invitee {
+  id      String       @id @default(cuid())
+  eventId String
+  event   EventProject @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  displayName String // como aparece en su invitación, ej. "Familia Torres"
+  maxPasses   Int // tope de personas que puede confirmar (él + acompañantes)
+  phone       String? // para el botón de enviar por WhatsApp
+  email       String?
+
+  inviteCode String  @unique // va en la URL personalizada, ej. /invite/{inviteCode}
+  isGeneric  Boolean @default(false) // invitación "genérica" de respaldo, sin nombre fijo
+
+  status String @default("pending") // pending | sent | confirmed | declined
+
+  rsvpId String? @unique
+  rsvp   RSVP?   @relation(fields: [rsvpId], references: [id])
+
+  createdAt DateTime  @default(now())
+  sentAt    DateTime?
 
   @@index([eventId])
 }

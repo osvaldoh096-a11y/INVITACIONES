@@ -27,12 +27,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { Plus, Copy, ExternalLink, Link as LinkIcon, QrCode } from 'lucide-react';
+import { Plus, Copy, ExternalLink, Link as LinkIcon, QrCode, Users } from 'lucide-react';
 import { eventProjectSchema, type EventProjectFormData, type EventProject } from '../lib/validations';
 import { eventService } from '../lib/api';
 
 interface EventsPanelProps {
   onSelectEvent?: (eventCode: string | null) => void;
+  onManageInvitees?: (eventCode: string) => void;
 }
 
 // Solo se permiten fechas futuras (posteriores a hoy) para el evento.
@@ -42,7 +43,7 @@ function tomorrowIsoDate(): string {
   return d.toISOString().slice(0, 10);
 }
 
-export default function EventsPanel({ onSelectEvent }: EventsPanelProps) {
+export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsPanelProps) {
   const [events, setEvents] = useState<(EventProject & { _count?: { rsvps: number } })[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -233,6 +234,16 @@ export default function EventsPanel({ onSelectEvent }: EventsPanelProps) {
                         </code>
                       </TableCell>
                       <TableCell className="flex gap-2">
+                        {onManageInvitees && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onManageInvitees(event.eventCode)}
+                            title="Lista de invitados precargada (pases limitados)"
+                          >
+                            <Users className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"

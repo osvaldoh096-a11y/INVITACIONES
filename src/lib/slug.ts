@@ -17,3 +17,23 @@ export function generateEventCode(eventName: string): string {
   const random = Math.random().toString(36).slice(2, 8);
   return `${base || 'evento'}-${random}`;
 }
+
+/**
+ * Genera un "inviteCode" legible y único para un invitado/familia de la
+ * lista precargada. Es la parte final de su link personalizado de RSVP
+ * (/invite/{inviteCode}) — imposible de adivinar por el random del final.
+ *
+ * Ej: generateInviteCode("Familia Torres") -> "familia-torres-p9k2m1"
+ */
+export function generateInviteCode(displayName: string): string {
+  const base = displayName
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 30);
+
+  const random = Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 8);
+  return `${base || 'invitado'}-${random}`;
+}

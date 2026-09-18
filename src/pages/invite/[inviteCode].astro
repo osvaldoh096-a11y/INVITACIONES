@@ -1,0 +1,21 @@
+---
+import '../../styles/global.css';
+import InviteForm from '../../components/InviteForm';
+import { Toaster } from '../../components/ui/sonner';
+
+const { inviteCode } = Astro.params;
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Confirma tu asistencia</title>
+  </head>
+
+  <body>
+    <InviteForm inviteCode={inviteCode as string} client:load />
+    <Toaster client:only="react" />
+  </body>
+</html>
