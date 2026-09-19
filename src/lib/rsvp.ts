@@ -1,6 +1,7 @@
 import prisma from './prisma';
 import { appendRsvpToSheet } from './sheets';
 import { sendRsvpConfirmationEmail } from './email';
+import { hasQrCheckin } from './packages';
 import type { RsvpSubmitFormData } from './validations';
 
 /**
@@ -13,7 +14,7 @@ import type { RsvpSubmitFormData } from './validations';
  * duplicar esta lógica en dos lados.
  */
 export async function createRsvpWithGuests(
-  event: { id: string; eventCode: string; eventName: string },
+  event: { id: string; eventCode: string; eventName: string; packageTier: string },
   data: RsvpSubmitFormData,
   origin: string,
 ) {
@@ -45,10 +46,10 @@ export async function createRsvpWithGuests(
     },
   });
 
-  // Un QR único por persona confirmada (titular + cada acompañante), solo
-  // si sí va a asistir — no tiene sentido generar código de acceso para
-  // quien avisó que no viene.
-  const guestNames = data.attending
+  // Un QR único por persona confirmada (titular + cada acompañante) es
+  // exclusivo del paquete Grande — Básico y Medio no generan códigos de
+  // acceso, así que tampoco tiene sentido mandarles el correo con QR.
+  const guestNames = data.attending && hasQrCheckin(event.packageTier)
     ? [
         data.fullName,
         ...(data.companionNames

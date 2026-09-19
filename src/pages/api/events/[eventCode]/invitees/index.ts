@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { requireAuth } from '../../../../../lib/auth';
 import { generateInviteCode } from '../../../../../lib/slug';
+import { hasInviteeList } from '../../../../../lib/packages';
 import prisma from '../../../../../lib/prisma';
 
 // GET: lista de invitados precargados de un evento (panel interno).
@@ -49,6 +50,13 @@ export const POST: APIRoute = async (context) => {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+
+    if (!hasInviteeList(event.packageTier)) {
+      return new Response(
+        JSON.stringify({ error: `El paquete de este evento (${event.packageTier}) no incluye lista de invitados precargada` }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } },
+      );
     }
 
     const body = await context.request.json();

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PACKAGE_TIERS } from './packages';
 
 // --- Auth (equipo interno) ---
 export const loginSchema = z.object({
@@ -29,6 +30,7 @@ export const eventProjectSchema = z.object({
   clientName: z.string().min(1, 'El nombre del cliente es requerido'),
   eventName: z.string().min(1, 'El nombre del evento es requerido'),
   eventType: z.string().default('boda'),
+  packageTier: z.enum(PACKAGE_TIERS).default('grande'),
   eventDate: z.coerce
     .date()
     .optional()
@@ -74,6 +76,7 @@ export interface EventProject {
   clientName: string;
   eventName: string;
   eventType: string;
+  packageTier: string;
   eventDate: Date | null;
   location: string | null;
   isPublished: boolean;

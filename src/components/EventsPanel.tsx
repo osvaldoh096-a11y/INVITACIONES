@@ -30,11 +30,18 @@ import {
 import { Plus, Copy, ExternalLink, Link as LinkIcon, QrCode, Users } from 'lucide-react';
 import { eventProjectSchema, type EventProjectFormData, type EventProject } from '../lib/validations';
 import { eventService } from '../lib/api';
+import { PACKAGE_TIERS, PACKAGE_LABELS, hasInviteeList, hasQrCheckin } from '../lib/packages';
 
 interface EventsPanelProps {
-  onSelectEvent?: (eventCode: string | null) => void;
-  onManageInvitees?: (eventCode: string) => void;
+  onSelectEvent?: (eventCode: string | null, packageTier?: string) => void;
+  onManageInvitees?: (eventCode: string, packageTier?: string) => void;
 }
+
+const PACKAGE_BADGE_CLASS: Record<string, string> = {
+  basico: 'bg-gray-100 text-gray-700',
+  medio: 'bg-blue-100 text-blue-800',
+  grande: 'bg-purple-100 text-purple-800',
+};
 
 // Solo se permiten fechas futuras (posteriores a hoy) para el evento.
 function tomorrowIsoDate(): string {
@@ -58,7 +65,7 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
     formState: { errors, isSubmitting },
   } = useForm<EventProjectFormData>({
     resolver: zodResolver(eventProjectSchema),
-    defaultValues: { eventType: 'boda' },
+    defaultValues: { eventType: 'boda', packageTier: 'basico' },
   });
 
   useEffect(() => {
@@ -80,7 +87,7 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
     try {
       const result = await eventService.create(data);
       toast.success(`Evento creado: ${result.event.eventCode}`);
-      reset({ eventType: 'boda' });
+      reset({ eventType: 'boda', packageTier: 'basico' });
       setDialogOpen(false);
       load();
     } catch (err) {
@@ -159,6 +166,29 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
                 </Select>
               </div>
 
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Paquete</label>
+                <Select
+                  defaultValue="basico"
+                  onValueChange={(v) => setValue('packageTier', v as (typeof PACKAGE_TIERS)[number])}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PACKAGE_TIERS.map((tier) => (
+                      <SelectItem key={tier} value={tier}>
+                        {PACKAGE_LABELS[tier]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Básico: RSVP + panel + CSV. Medio: + lista de invitados con pases limitados.
+                  Grande: + QR por invitado + check-in.
+                </p>
+              </div>
+
               <FormField
                 label="Fecha del evento"
                 name="eventDate"
@@ -209,6 +239,7 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
                     <TableHead>Evento</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Tipo</TableHead>
+                    <TableHead>Paquete</TableHead>
                     <TableHead>RSVPs</TableHead>
                     <TableHead>ID_EVENTO (para Framer)</TableHead>
                     <TableHead></TableHead>
@@ -221,9 +252,18 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
                       <TableCell>{event.clientName}</TableCell>
                       <TableCell className="capitalize">{event.eventType}</TableCell>
                       <TableCell>
+                        <span
+                          className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            PACKAGE_BADGE_CLASS[event.packageTier] ?? PACKAGE_BADGE_CLASS.basico
+                          }`}
+                        >
+                          {PACKAGE_LABELS[event.packageTier as keyof typeof PACKAGE_LABELS] ?? event.packageTier}
+                        </span>
+                      </TableCell>
+                      <TableCell>
                         <button
                           className="text-primary hover:underline"
-                          onClick={() => onSelectEvent?.(event.eventCode)}
+                          onClick={() => onSelectEvent?.(event.eventCode, event.packageTier)}
                         >
                           {event._count?.rsvps ?? 0} respuestas
                         </button>
@@ -234,11 +274,11 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
                         </code>
                       </TableCell>
                       <TableCell className="flex gap-2">
-                        {onManageInvitees && (
+                        {onManageInvitees && hasInviteeList(event.packageTier) && (
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => onManageInvitees(event.eventCode)}
+                            onClick={() => onManageInvitees(event.eventCode, event.packageTier)}
                             title="Lista de invitados precargada (pases limitados)"
                           >
                             <Users className="h-4 w-4" />
@@ -260,14 +300,16 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
                         >
                           <LinkIcon className="h-4 w-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => copyCheckinLink(event.eventCode)}
-                          title="Copiar link de check-in (lector de QR) para la entrada del evento"
-                        >
-                          <QrCode className="h-4 w-4" />
-                        </Button>
+                        {hasQrCheckin(event.packageTier) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyCheckinLink(event.eventCode)}
+                            title="Copiar link de check-in (lector de QR) para la entrada del evento"
+                          >
+                            <QrCode className="h-4 w-4" />
+                          </Button>
+                        )}
                         <a
                           href={`/api/events/${event.eventCode}`}
                           target="_blank"

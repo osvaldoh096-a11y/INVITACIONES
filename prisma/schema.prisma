@@ -36,6 +36,13 @@ model EventProject {
   eventDate   DateTime?
   location    String?
 
+  // Qué tanto del sistema aplica a este evento — define qué ve el panel y
+  // qué genera el flujo público de RSVP. Ver src/lib/packages.ts.
+  // basico: RSVP abierto + panel + CSV + página de estado.
+  // medio:  + lista de invitados precargada con pases limitados.
+  // grande: + QR por invitado + check-in con cámara.
+  packageTier String @default("grande")
+
   isPublished    Boolean @default(true)
   accessPassword String? // opcional, para invitaciones "privadas"
 
