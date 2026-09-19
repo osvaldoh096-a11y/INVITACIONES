@@ -1,4 +1,4 @@
-# Sistema de invitaciones digitales (AMAL AGENDA / NayarSound)
+# Sistema de invitaciones digitales
 
 Backend de administración de eventos, RSVP y sincronización con Google
 Sheets. El **diseño visual** de cada invitación se hace en **Framer**; este
