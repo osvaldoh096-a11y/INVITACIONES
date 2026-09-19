@@ -27,7 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { Plus, Copy, ExternalLink, Link as LinkIcon, QrCode, Users } from 'lucide-react';
+import { Input } from './ui/input';
+import { Plus, Copy, ExternalLink, Link as LinkIcon, QrCode, Users, Trash2 } from 'lucide-react';
 import { eventProjectSchema, type EventProjectFormData, type EventProject } from '../lib/validations';
 import { eventService } from '../lib/api';
 import { PACKAGE_TIERS, PACKAGE_LABELS, hasInviteeList, hasQrCheckin } from '../lib/packages';
@@ -55,6 +56,10 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const minEventDate = tomorrowIsoDate();
+
+  const [deleteTarget, setDeleteTarget] = useState<EventProject | null>(null);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const {
     handleSubmit,
@@ -111,6 +116,27 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
     const url = `${window.location.origin}/checkin/${eventCode}`;
     navigator.clipboard.writeText(url);
     toast.success('Link de check-in copiado — quien reciba en la puerta lo abre desde su celular');
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    if (!deletePassword) {
+      toast.error('Escribe tu contraseña para confirmar');
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      await eventService.remove(deleteTarget.eventCode, deletePassword);
+      toast.success(`Evento "${deleteTarget.eventName}" eliminado`);
+      setDeleteTarget(null);
+      setDeletePassword('');
+      load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'No se pudo eliminar el evento');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (loading) return <div className="text-center py-10">Cargando eventos...</div>;
@@ -320,6 +346,15 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
                             <ExternalLink className="h-4 w-4" />
                           </Button>
                         </a>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => setDeleteTarget(event)}
+                          title="Eliminar evento"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -329,6 +364,45 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+            setDeletePassword('');
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar evento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Vas a eliminar <strong>{deleteTarget?.eventName}</strong> ({deleteTarget?.clientName}).
+              Esto borra también todas sus RSVPs, invitados y códigos QR — no se puede deshacer.
+            </p>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Confirma con tu contraseña</label>
+              <Input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? 'Eliminando...' : 'Eliminar definitivamente'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

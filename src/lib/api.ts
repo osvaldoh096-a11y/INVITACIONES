@@ -50,10 +50,15 @@ export const eventService = {
     return result;
   },
 
-  async remove(eventCode: string) {
-    const response = await fetch(`/api/events/${eventCode}`, { method: 'DELETE' });
-    if (!response.ok) throw new Error('No se pudo eliminar el evento');
-    return response.json();
+  async remove(eventCode: string, password: string) {
+    const response = await fetch(`/api/events/${eventCode}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'No se pudo eliminar el evento');
+    return result;
   },
 };
 
