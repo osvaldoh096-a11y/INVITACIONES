@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { requireAuth, login } from '../../../lib/auth';
+import { requireAuth } from '../../../lib/auth';
 import { eventProjectSchema } from '../../../lib/validations';
 import prisma from '../../../lib/prisma';
 
@@ -78,24 +78,12 @@ export const PATCH: APIRoute = async (context) => {
 };
 
 // DELETE admin: eliminar un evento (y en cascada sesiones/RSVPs/invitados).
-// Es destructivo e irreversible, así que exige volver a escribir tu propia
-// contraseña de administrador en el body ({ password }) — no basta con
-// tener la sesión abierta.
+// Es destructivo e irreversible — el panel pide confirmación explícita
+// antes de llamar esto, pero no contraseña.
 export const DELETE: APIRoute = async (context) => {
   try {
-    const session = await requireAuth(context);
+    await requireAuth(context);
     const { eventCode } = context.params;
-
-    const body = await context.request.json().catch(() => ({}));
-    const password = typeof body.password === 'string' ? body.password : '';
-
-    const verified = await login(session.email, password);
-    if (!verified) {
-      return new Response(JSON.stringify({ error: 'Contraseña incorrecta' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
 
     await prisma.eventProject.delete({ where: { eventCode } });
 

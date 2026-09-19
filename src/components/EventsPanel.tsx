@@ -27,7 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { Input } from './ui/input';
 import { Plus, Copy, ExternalLink, Link as LinkIcon, QrCode, Users, Trash2 } from 'lucide-react';
 import { eventProjectSchema, type EventProjectFormData, type EventProject } from '../lib/validations';
 import { eventService } from '../lib/api';
@@ -58,7 +57,6 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
   const minEventDate = tomorrowIsoDate();
 
   const [deleteTarget, setDeleteTarget] = useState<EventProject | null>(null);
-  const [deletePassword, setDeletePassword] = useState('');
   const [deleting, setDeleting] = useState(false);
 
   const {
@@ -120,17 +118,12 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    if (!deletePassword) {
-      toast.error('Escribe tu contraseña para confirmar');
-      return;
-    }
 
     setDeleting(true);
     try {
-      await eventService.remove(deleteTarget.eventCode, deletePassword);
+      await eventService.remove(deleteTarget.eventCode);
       toast.success(`Evento "${deleteTarget.eventName}" eliminado`);
       setDeleteTarget(null);
-      setDeletePassword('');
       load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'No se pudo eliminar el evento');
@@ -365,41 +358,30 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
         </CardContent>
       </Card>
 
-      <Dialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteTarget(null);
-            setDeletePassword('');
-          }
-        }}
-      >
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Eliminar evento</DialogTitle>
+            <DialogTitle>¿Eliminar este evento?</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               Vas a eliminar <strong>{deleteTarget?.eventName}</strong> ({deleteTarget?.clientName}).
-              Esto borra también todas sus RSVPs, invitados y códigos QR — no se puede deshacer.
+              Esto borra también todas sus RSVPs, invitados y códigos QR —{' '}
+              <strong className="text-red-600">no se puede deshacer</strong>.
             </p>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Confirma con tu contraseña</label>
-              <Input
-                type="password"
-                value={deletePassword}
-                onChange={(e) => setDeletePassword(e.target.value)}
-                autoFocus
-              />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setDeleteTarget(null)}>
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? 'Eliminando...' : 'Sí, eliminar'}
+              </Button>
             </div>
-            <Button
-              variant="destructive"
-              className="w-full"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
-              {deleting ? 'Eliminando...' : 'Eliminar definitivamente'}
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
