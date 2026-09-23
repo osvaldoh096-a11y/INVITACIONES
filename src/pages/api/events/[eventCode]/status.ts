@@ -57,10 +57,12 @@ export const POST: APIRoute = async ({ params, request }) => {
   return new Response(
     JSON.stringify({
       event: {
+        eventCode: event.eventCode,
         eventName: event.eventName,
         eventType: event.eventType,
         eventDate: event.eventDate,
         location: event.location,
+        packageTier: event.packageTier,
       },
       analytics: {
         total: rsvps.length,

@@ -11,6 +11,9 @@ import {
   TableRow,
 } from './ui/table';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
+import { QrCode, Copy } from 'lucide-react';
+import { hasQrCheckin } from '../lib/packages';
 
 interface StatusRsvp {
   id: string;
@@ -24,7 +27,14 @@ interface StatusRsvp {
 }
 
 interface StatusData {
-  event: { eventName: string; eventType: string; eventDate: string | null; location: string | null };
+  event: {
+    eventCode: string;
+    eventName: string;
+    eventType: string;
+    eventDate: string | null;
+    location: string | null;
+    packageTier: string;
+  };
   analytics: {
     total: number;
     totalAttending: number;
@@ -166,6 +176,40 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
           </CardContent>
         </Card>
       </div>
+
+      {hasQrCheckin(event.packageTier) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5" />
+              Lector de código QR (check-in)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Este link abre la cámara para escanear los boletos QR de tus invitados en la
+              entrada. Úsalo tú mismo o pásaselo a quien reciba ese día — no necesita
+              contraseña.
+            </p>
+            <div className="flex gap-2">
+              <Input readOnly value={`${window.location.origin}/checkin/${event.eventCode}`} />
+              <Button
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/checkin/${event.eventCode}`);
+                  toast.success('Link copiado');
+                }}
+                title="Copiar link"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+              <a href={`/checkin/${event.eventCode}`} target="_blank" rel="noreferrer">
+                <Button>Abrir</Button>
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
