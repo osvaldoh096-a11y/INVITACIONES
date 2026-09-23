@@ -203,8 +203,8 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Básico: RSVP + panel + CSV. Medio: + lista de invitados con pases limitados.
-                  Grande: + QR por invitado + check-in.
+                  Plata: RSVP + panel + CSV. Oro: + lista de invitados con pases limitados + QR +
+                  check-in. Diamante: mismo backend que Oro (lo extra es diseño/servicio).
                 </p>
               </div>
 
