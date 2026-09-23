@@ -27,7 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { Plus, Copy, ExternalLink, Link as LinkIcon, QrCode, Users, Trash2, Pencil } from 'lucide-react';
+import { Plus, Copy, ExternalLink, Link as LinkIcon, QrCode, Users, Trash2, Pencil, MoreVertical } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { eventProjectSchema, type EventProjectFormData, type EventProject } from '../lib/validations';
 import { eventService } from '../lib/api';
 import { PACKAGE_TIERS, PACKAGE_LABELS, hasInviteeList, hasQrCheckin } from '../lib/packages';
@@ -344,6 +345,14 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
                         </code>
                       </TableCell>
                       <TableCell className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditTarget(event)}
+                          title="Editar evento (paquete, URL de Framer, etc.)"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         {onManageInvitees && hasInviteeList(event.packageTier) && (
                           <Button
                             size="sm"
@@ -356,22 +365,6 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
                             <Users className="h-4 w-4" />
                           </Button>
                         )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setEditTarget(event)}
-                          title="Editar evento (paquete, URL de Framer, etc.)"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => copyEndpoint(event.eventCode)}
-                          title="Copiar endpoint público para el formulario de Framer"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
@@ -390,16 +383,6 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
                             <QrCode className="h-4 w-4" />
                           </Button>
                         )}
-                        <a
-                          href={`/api/events/${event.eventCode}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex"
-                        >
-                          <Button size="sm" variant="outline" title="Ver datos públicos del evento">
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        </a>
                         <Button
                           size="sm"
                           variant="outline"
@@ -409,6 +392,39 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
+
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button size="sm" variant="outline" title="Opciones técnicas">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-64 space-y-1 p-2">
+                            <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">
+                              Solo para configurar Framer
+                            </p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full justify-start"
+                              onClick={() => copyEndpoint(event.eventCode)}
+                            >
+                              <Copy className="mr-2 h-4 w-4" />
+                              Copiar endpoint público
+                            </Button>
+                            <a
+                              href={`/api/events/${event.eventCode}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block"
+                            >
+                              <Button variant="ghost" size="sm" className="w-full justify-start">
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                Ver datos públicos (JSON)
+                              </Button>
+                            </a>
+                          </PopoverContent>
+                        </Popover>
                       </TableCell>
                     </TableRow>
                   ))}
