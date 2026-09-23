@@ -12,8 +12,8 @@ import {
 } from './ui/table';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { QrCode, Copy } from 'lucide-react';
-import { hasQrCheckin } from '../lib/packages';
+import { QrCode, Copy, MessageCircle, Trash2, UserPlus } from 'lucide-react';
+import { hasQrCheckin, hasInviteeList } from '../lib/packages';
 
 interface StatusRsvp {
   id: string;
@@ -26,6 +26,23 @@ interface StatusRsvp {
   createdAt: string;
 }
 
+interface ClientInvitee {
+  id: string;
+  displayName: string;
+  maxPasses: number;
+  phone: string | null;
+  inviteCode: string;
+  status: string;
+  isGeneric: boolean;
+}
+
+const INVITEE_STATUS_LABEL: Record<string, { text: string; className: string }> = {
+  pending: { text: 'Sin enviar', className: 'bg-gray-100 text-gray-700' },
+  sent: { text: 'Enviada', className: 'bg-blue-100 text-blue-800' },
+  confirmed: { text: 'Confirmó', className: 'bg-green-100 text-green-800' },
+  declined: { text: 'No asistirá', className: 'bg-red-100 text-red-800' },
+};
+
 interface StatusData {
   event: {
     eventCode: string;
@@ -34,6 +51,7 @@ interface StatusData {
     eventDate: string | null;
     location: string | null;
     packageTier: string;
+    framerUrl: string | null;
   };
   analytics: {
     total: number;
@@ -89,6 +107,116 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     fetchStatus(password);
+  };
+
+  // --- Lista de invitados: autogestión por el cliente, sin login ---
+  const [invitees, setInvitees] = useState<ClientInvitee[]>([]);
+  const [newName, setNewName] = useState('');
+  const [newPasses, setNewPasses] = useState(1);
+  const [newPhone, setNewPhone] = useState('');
+  const [addingInvitee, setAddingInvitee] = useState(false);
+
+  const loadInvitees = async (accessPassword?: string) => {
+    try {
+      const res = await fetch(`/api/events/${eventCode}/invitees/public`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(accessPassword ? { accessPassword } : {}),
+      });
+      const result = await res.json();
+      if (res.ok) setInvitees(result.invitees);
+    } catch {
+      // si falla, simplemente no se muestra la lista; el resto de la página sigue funcionando
+    }
+  };
+
+  useEffect(() => {
+    if (data && hasInviteeList(data.event.packageTier)) {
+      loadInvitees(password || undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  const handleAddInvitee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim() || newPasses < 1) {
+      toast.error('Escribe el nombre y al menos 1 pase');
+      return;
+    }
+    setAddingInvitee(true);
+    try {
+      const res = await fetch(`/api/events/${eventCode}/invitees/public`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessPassword: password || undefined,
+          displayName: newName.trim(),
+          maxPasses: newPasses,
+          phone: newPhone.trim() || undefined,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      toast.success('Invitado agregado');
+      setNewName('');
+      setNewPasses(1);
+      setNewPhone('');
+      loadInvitees(password || undefined);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'No se pudo agregar');
+    } finally {
+      setAddingInvitee(false);
+    }
+  };
+
+  const handleDeleteInvitee = async (inviteId: string) => {
+    if (!confirm('¿Quitar a este invitado de la lista?')) return;
+    try {
+      const res = await fetch(`/api/events/${eventCode}/invitees/public`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessPassword: password || undefined, inviteId }),
+      });
+      if (!res.ok) throw new Error('No se pudo eliminar');
+      setInvitees((prev) => prev.filter((i) => i.id !== inviteId));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'No se pudo eliminar');
+    }
+  };
+
+  const inviteUrl = (inviteCode: string) => {
+    const framerUrl = data?.event.framerUrl;
+    if (framerUrl) {
+      const url = new URL(framerUrl);
+      url.searchParams.set('invite', inviteCode);
+      return url.toString();
+    }
+    return `${window.location.origin}/invite/${inviteCode}`;
+  };
+
+  const copyInviteLink = (inviteCode: string) => {
+    navigator.clipboard.writeText(inviteUrl(inviteCode));
+    toast.success('Link copiado');
+  };
+
+  const sendInviteWhatsApp = async (invitee: ClientInvitee) => {
+    const text = encodeURIComponent(
+      `¡Hola ${invitee.displayName}! Aquí está tu invitación, tienen ${invitee.maxPasses} pase(s) asignado(s): ${inviteUrl(invitee.inviteCode)}`,
+    );
+    const phoneDigits = invitee.phone?.replace(/\D/g, '') || '';
+    const url = phoneDigits ? `https://wa.me/${phoneDigits}?text=${text}` : `https://wa.me/?text=${text}`;
+    window.open(url, '_blank');
+
+    if (invitee.status === 'pending') {
+      await fetch(`/api/events/${eventCode}/invitees/public`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessPassword: password || undefined, inviteId: invitee.id }),
+      });
+      setInvitees((prev) =>
+        prev.map((i) => (i.id === invitee.id ? { ...i, status: 'sent' } : i)),
+      );
+    }
   };
 
   if (loading) {
@@ -207,6 +335,100 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
                 <Button>Abrir</Button>
               </a>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {hasInviteeList(event.packageTier) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Tu lista de invitados
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p className="text-sm text-muted-foreground">
+              Agrega aquí a cada persona o familia que quieras invitar, con cuántos pases le
+              corresponden. A cada uno le generamos un link personalizado que puedes copiar o
+              mandar directo por WhatsApp.
+            </p>
+
+            <form onSubmit={handleAddInvitee} className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1.5fr_auto] gap-2 items-end">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Nombre o familia</label>
+                <Input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Ej. Familia Torres"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Pases</label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={newPasses}
+                  onChange={(e) => setNewPasses(Math.max(1, Number(e.target.value) || 1))}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Teléfono (opcional)</label>
+                <Input
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  placeholder="55 1234 5678"
+                />
+              </div>
+              <Button type="submit" disabled={addingInvitee}>
+                {addingInvitee ? 'Agregando...' : 'Agregar'}
+              </Button>
+            </form>
+
+            {invitees.length > 0 && (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Invitado</TableHead>
+                      <TableHead>Pases</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {invitees.map((inv) => {
+                      const status = INVITEE_STATUS_LABEL[inv.status] ?? INVITEE_STATUS_LABEL.pending;
+                      return (
+                        <TableRow key={inv.id}>
+                          <TableCell className="font-medium">{inv.displayName}</TableCell>
+                          <TableCell>{inv.maxPasses}</TableCell>
+                          <TableCell>
+                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${status.className}`}>
+                              {status.text}
+                            </span>
+                          </TableCell>
+                          <TableCell className="flex gap-2 justify-end">
+                            <Button size="sm" variant="outline" onClick={() => copyInviteLink(inv.inviteCode)} title="Copiar link">
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => sendInviteWhatsApp(inv)} title="Enviar por WhatsApp">
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
+                            {inv.status === 'pending' && (
+                              <Button size="sm" variant="outline" onClick={() => handleDeleteInvitee(inv.id)} title="Quitar">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
