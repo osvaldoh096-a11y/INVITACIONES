@@ -34,6 +34,6 @@ export function generateInviteCode(displayName: string): string {
     .replace(/^-+|-+$/g, '')
     .slice(0, 30);
 
-  const random = Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 8);
+  const random = Math.random().toString(36).slice(2, 8);
   return `${base || 'invitado'}-${random}`;
 }
