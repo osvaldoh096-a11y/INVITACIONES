@@ -433,6 +433,7 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
         </Card>
       )}
 
+      {!hasInviteeList(event.packageTier) && (
       <Card>
         <CardHeader>
           <CardTitle>Invitados</CardTitle>
@@ -482,6 +483,7 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
           )}
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }
