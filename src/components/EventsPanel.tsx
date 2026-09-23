@@ -27,15 +27,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { Plus, Copy, ExternalLink, Link as LinkIcon, Users, Trash2, Pencil, MoreVertical } from 'lucide-react';
+import { Plus, Copy, ExternalLink, Link as LinkIcon, Trash2, Pencil, MoreVertical } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { eventProjectSchema, type EventProjectFormData, type EventProject } from '../lib/validations';
 import { eventService } from '../lib/api';
-import { PACKAGE_TIERS, PACKAGE_LABELS, hasInviteeList } from '../lib/packages';
+import { PACKAGE_TIERS, PACKAGE_LABELS } from '../lib/packages';
 
 interface EventsPanelProps {
   onSelectEvent?: (eventCode: string | null, packageTier?: string) => void;
-  onManageInvitees?: (eventCode: string, packageTier?: string, framerUrl?: string | null) => void;
 }
 
 const PACKAGE_BADGE_CLASS: Record<string, string> = {
@@ -51,7 +50,7 @@ function tomorrowIsoDate(): string {
   return d.toISOString().slice(0, 10);
 }
 
-export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsPanelProps) {
+export default function EventsPanel({ onSelectEvent }: EventsPanelProps) {
   const [events, setEvents] = useState<(EventProject & { _count?: { rsvps: number } })[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -347,18 +346,6 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        {onManageInvitees && hasInviteeList(event.packageTier) && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              onManageInvitees(event.eventCode, event.packageTier, event.framerUrl)
-                            }
-                            title="Lista de invitados precargada (pases limitados)"
-                          >
-                            <Users className="h-4 w-4" />
-                          </Button>
-                        )}
                         <Button
                           size="sm"
                           variant="outline"

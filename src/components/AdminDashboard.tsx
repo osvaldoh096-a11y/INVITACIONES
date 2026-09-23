@@ -2,16 +2,12 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import EventsPanel from './EventsPanel';
 import RSVPList from './RSVPList';
-import InviteesPanel from './InviteesPanel';
 import { Button } from './ui/button';
 import { LogOut } from 'lucide-react';
-import { hasInviteeList } from '../lib/packages';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'events' | 'rsvps' | 'invitees'>('events');
+  const [activeTab, setActiveTab] = useState<'events' | 'rsvps'>('events');
   const [selectedEventCode, setSelectedEventCode] = useState<string | null>(null);
-  const [selectedEventTier, setSelectedEventTier] = useState<string>('grande');
-  const [selectedEventFramerUrl, setSelectedEventFramerUrl] = useState<string | null>(null);
 
   const handleLogout = async () => {
     try {
@@ -60,18 +56,6 @@ export default function AdminDashboard() {
             >
               RSVPs {selectedEventCode ? `(${selectedEventCode})` : '(todos)'}
             </button>
-            {selectedEventCode && hasInviteeList(selectedEventTier) && (
-              <button
-                onClick={() => setActiveTab('invitees')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'invitees'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Lista de invitados ({selectedEventCode})
-              </button>
-            )}
             {activeTab !== 'events' && selectedEventCode && (
               <button
                 onClick={() => {
@@ -90,20 +74,11 @@ export default function AdminDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'events' ? (
           <EventsPanel
-            onSelectEvent={(code, tier) => {
+            onSelectEvent={(code) => {
               setSelectedEventCode(code);
-              if (tier) setSelectedEventTier(tier);
               setActiveTab('rsvps');
             }}
-            onManageInvitees={(code, tier, framerUrl) => {
-              setSelectedEventCode(code);
-              if (tier) setSelectedEventTier(tier);
-              setSelectedEventFramerUrl(framerUrl ?? null);
-              setActiveTab('invitees');
-            }}
           />
-        ) : activeTab === 'invitees' && selectedEventCode && hasInviteeList(selectedEventTier) ? (
-          <InviteesPanel eventCode={selectedEventCode} framerUrl={selectedEventFramerUrl} />
         ) : (
           <RSVPList eventCode={selectedEventCode} />
         )}
