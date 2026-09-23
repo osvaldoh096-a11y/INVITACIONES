@@ -27,11 +27,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { Plus, Copy, ExternalLink, Link as LinkIcon, QrCode, Users, Trash2, Pencil, MoreVertical } from 'lucide-react';
+import { Plus, Copy, ExternalLink, Link as LinkIcon, Users, Trash2, Pencil, MoreVertical } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { eventProjectSchema, type EventProjectFormData, type EventProject } from '../lib/validations';
 import { eventService } from '../lib/api';
-import { PACKAGE_TIERS, PACKAGE_LABELS, hasInviteeList, hasQrCheckin } from '../lib/packages';
+import { PACKAGE_TIERS, PACKAGE_LABELS, hasInviteeList } from '../lib/packages';
 
 interface EventsPanelProps {
   onSelectEvent?: (eventCode: string | null, packageTier?: string) => void;
@@ -147,12 +147,6 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
     const url = `${window.location.origin}/estado/${eventCode}`;
     navigator.clipboard.writeText(url);
     toast.success('Link copiado — mándaselo a tu cliente para que vea sus confirmaciones');
-  };
-
-  const copyCheckinLink = (eventCode: string) => {
-    const url = `${window.location.origin}/checkin/${eventCode}`;
-    navigator.clipboard.writeText(url);
-    toast.success('Link de check-in copiado — quien reciba en la puerta lo abre desde su celular');
   };
 
   const handleDelete = async () => {
@@ -373,16 +367,6 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
                         >
                           <LinkIcon className="h-4 w-4" />
                         </Button>
-                        {hasQrCheckin(event.packageTier) && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => copyCheckinLink(event.eventCode)}
-                            title="Copiar link de check-in (lector de QR) para la entrada del evento"
-                          >
-                            <QrCode className="h-4 w-4" />
-                          </Button>
-                        )}
                         <Button
                           size="sm"
                           variant="outline"
