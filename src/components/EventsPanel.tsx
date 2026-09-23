@@ -27,14 +27,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { Plus, Copy, ExternalLink, Link as LinkIcon, QrCode, Users, Trash2 } from 'lucide-react';
+import { Plus, Copy, ExternalLink, Link as LinkIcon, QrCode, Users, Trash2, Pencil } from 'lucide-react';
 import { eventProjectSchema, type EventProjectFormData, type EventProject } from '../lib/validations';
 import { eventService } from '../lib/api';
 import { PACKAGE_TIERS, PACKAGE_LABELS, hasInviteeList, hasQrCheckin } from '../lib/packages';
 
 interface EventsPanelProps {
   onSelectEvent?: (eventCode: string | null, packageTier?: string) => void;
-  onManageInvitees?: (eventCode: string, packageTier?: string) => void;
+  onManageInvitees?: (eventCode: string, packageTier?: string, framerUrl?: string | null) => void;
 }
 
 const PACKAGE_BADGE_CLASS: Record<string, string> = {
@@ -58,6 +58,7 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
 
   const [deleteTarget, setDeleteTarget] = useState<EventProject | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [editTarget, setEditTarget] = useState<EventProject | null>(null);
 
   const {
     handleSubmit,
@@ -70,6 +71,43 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
     resolver: zodResolver(eventProjectSchema),
     defaultValues: { eventType: 'boda', packageTier: 'basico' },
   });
+
+  const {
+    handleSubmit: handleEditSubmit,
+    register: registerEdit,
+    reset: resetEdit,
+    setValue: setEditValue,
+    formState: { errors: editErrors, isSubmitting: isEditSubmitting },
+  } = useForm<EventProjectFormData>({
+    resolver: zodResolver(eventProjectSchema),
+  });
+
+  useEffect(() => {
+    if (editTarget) {
+      resetEdit({
+        clientName: editTarget.clientName,
+        eventName: editTarget.eventName,
+        eventType: editTarget.eventType,
+        packageTier: editTarget.packageTier as (typeof PACKAGE_TIERS)[number],
+        eventDate: editTarget.eventDate ? new Date(editTarget.eventDate) : undefined,
+        location: editTarget.location ?? '',
+        accessPassword: editTarget.accessPassword ?? '',
+        framerUrl: editTarget.framerUrl ?? '',
+      });
+    }
+  }, [editTarget]);
+
+  const onEditSubmit = async (data: EventProjectFormData) => {
+    if (!editTarget) return;
+    try {
+      await eventService.update(editTarget.eventCode, data);
+      toast.success('Evento actualizado');
+      setEditTarget(null);
+      load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'No se pudo actualizar el evento');
+    }
+  };
 
   useEffect(() => {
     load();
@@ -233,6 +271,19 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
                 errors={errors}
               />
 
+              <FormField
+                label="URL publicada en Framer (opcional)"
+                name="framerUrl"
+                type="url"
+                placeholder="https://boda-torres.framer.website"
+                register={register}
+                errors={errors}
+              />
+              <p className="text-xs text-muted-foreground -mt-2">
+                Solo aplica a Oro/Diamante: es a dónde apuntan los links personalizados de la
+                lista de invitados. Si la dejas vacía, usan una página de respaldo propia.
+              </p>
+
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? 'Creando...' : 'Crear evento'}
               </Button>
@@ -297,12 +348,22 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => onManageInvitees(event.eventCode, event.packageTier)}
+                            onClick={() =>
+                              onManageInvitees(event.eventCode, event.packageTier, event.framerUrl)
+                            }
                             title="Lista de invitados precargada (pases limitados)"
                           >
                             <Users className="h-4 w-4" />
                           </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditTarget(event)}
+                          title="Editar evento (paquete, URL de Framer, etc.)"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
@@ -357,6 +418,85 @@ export default function EventsPanel({ onSelectEvent, onManageInvitees }: EventsP
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar evento</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4">
+            <FormField
+              label="Nombre del cliente"
+              name="clientName"
+              register={registerEdit}
+              errors={editErrors}
+              required
+            />
+            <FormField
+              label="Nombre del evento (se muestra a los invitados)"
+              name="eventName"
+              register={registerEdit}
+              errors={editErrors}
+              required
+            />
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Paquete</label>
+              <Select
+                value={editTarget?.packageTier}
+                onValueChange={(v) => setEditValue('packageTier', v as (typeof PACKAGE_TIERS)[number])}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PACKAGE_TIERS.map((tier) => (
+                    <SelectItem key={tier} value={tier}>
+                      {PACKAGE_LABELS[tier]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <FormField
+              label="Fecha del evento"
+              name="eventDate"
+              type="date"
+              min={minEventDate}
+              register={registerEdit}
+              errors={editErrors}
+            />
+
+            <FormField
+              label="Lugar"
+              name="location"
+              register={registerEdit}
+              errors={editErrors}
+            />
+
+            <FormField
+              label="Contraseña de acceso (opcional)"
+              name="accessPassword"
+              register={registerEdit}
+              errors={editErrors}
+            />
+
+            <FormField
+              label="URL publicada en Framer (opcional)"
+              name="framerUrl"
+              type="url"
+              placeholder="https://boda-torres.framer.website"
+              register={registerEdit}
+              errors={editErrors}
+            />
+
+            <Button type="submit" className="w-full" disabled={isEditSubmitting}>
+              {isEditSubmitting ? 'Guardando...' : 'Guardar cambios'}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>

@@ -11,6 +11,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'events' | 'rsvps' | 'invitees'>('events');
   const [selectedEventCode, setSelectedEventCode] = useState<string | null>(null);
   const [selectedEventTier, setSelectedEventTier] = useState<string>('grande');
+  const [selectedEventFramerUrl, setSelectedEventFramerUrl] = useState<string | null>(null);
 
   const handleLogout = async () => {
     try {
@@ -94,14 +95,15 @@ export default function AdminDashboard() {
               if (tier) setSelectedEventTier(tier);
               setActiveTab('rsvps');
             }}
-            onManageInvitees={(code, tier) => {
+            onManageInvitees={(code, tier, framerUrl) => {
               setSelectedEventCode(code);
               if (tier) setSelectedEventTier(tier);
+              setSelectedEventFramerUrl(framerUrl ?? null);
               setActiveTab('invitees');
             }}
           />
         ) : activeTab === 'invitees' && selectedEventCode && hasInviteeList(selectedEventTier) ? (
-          <InviteesPanel eventCode={selectedEventCode} />
+          <InviteesPanel eventCode={selectedEventCode} framerUrl={selectedEventFramerUrl} />
         ) : (
           <RSVPList eventCode={selectedEventCode} />
         )}

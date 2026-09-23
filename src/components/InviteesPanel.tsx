@@ -32,7 +32,13 @@ const STATUS_LABEL: Record<string, { text: string; className: string }> = {
   declined: { text: 'No asistirá', className: 'bg-red-100 text-red-800' },
 };
 
-export default function InviteesPanel({ eventCode }: { eventCode: string }) {
+export default function InviteesPanel({
+  eventCode,
+  framerUrl,
+}: {
+  eventCode: string;
+  framerUrl?: string | null;
+}) {
   const [invitees, setInvitees] = useState<Invitee[]>([]);
   const [loading, setLoading] = useState(true);
   const [bulkText, setBulkText] = useState('');
@@ -132,7 +138,17 @@ export default function InviteesPanel({ eventCode }: { eventCode: string }) {
     }
   };
 
-  const inviteUrl = (inviteCode: string) => `${window.location.origin}/invite/${inviteCode}`;
+  // Si el evento tiene una URL de Framer configurada, el link del invitado
+  // apunta al diseño real (?invite=CODE). Si no, cae a nuestra página de
+  // respaldo — útil solo mientras no exista el sitio publicado todavía.
+  const inviteUrl = (inviteCode: string) => {
+    if (framerUrl) {
+      const url = new URL(framerUrl);
+      url.searchParams.set('invite', inviteCode);
+      return url.toString();
+    }
+    return `${window.location.origin}/invite/${inviteCode}`;
+  };
 
   const copyLink = (inviteCode: string) => {
     navigator.clipboard.writeText(inviteUrl(inviteCode));

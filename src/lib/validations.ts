@@ -41,6 +41,7 @@ export const eventProjectSchema = z.object({
   location: z.string().optional(),
   isPublished: z.boolean().optional(),
   accessPassword: z.string().optional(),
+  framerUrl: z.string().url('URL inválida').optional().or(z.literal('')),
   sessions: z.array(eventSessionSchema).optional(),
 });
 export type EventProjectFormData = z.infer<typeof eventProjectSchema>;
@@ -81,6 +82,7 @@ export interface EventProject {
   location: string | null;
   isPublished: boolean;
   accessPassword: string | null;
+  framerUrl: string | null;
   createdById: string;
   createdAt: Date;
   updatedAt: Date;

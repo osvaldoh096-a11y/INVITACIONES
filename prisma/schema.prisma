@@ -46,6 +46,12 @@ model EventProject {
   isPublished    Boolean @default(true)
   accessPassword String? // opcional, para invitaciones "privadas"
 
+  // URL publicada del diseño en Framer para ESTE evento (cada cliente tiene
+  // su propio sitio/subdominio). Si está vacía, los links de invitados
+  // apuntan a nuestra página de respaldo (/invite/[inviteCode]) en vez de
+  // al diseño real — útil solo para pruebas antes de que exista el sitio.
+  framerUrl String?
+
   createdById String
   createdBy   AdminUser @relation(fields: [createdById], references: [id])
 
