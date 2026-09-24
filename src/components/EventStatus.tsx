@@ -34,6 +34,7 @@ interface ClientInvitee {
   inviteCode: string;
   status: string;
   isGeneric: boolean;
+  guestNames: string[];
 }
 
 const INVITEE_STATUS_LABEL: Record<string, { text: string; className: string }> = {
@@ -402,7 +403,14 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
                       const status = INVITEE_STATUS_LABEL[inv.status] ?? INVITEE_STATUS_LABEL.pending;
                       return (
                         <TableRow key={inv.id}>
-                          <TableCell className="font-medium">{inv.displayName}</TableCell>
+                          <TableCell className="font-medium">
+                            {inv.displayName}
+                            {inv.guestNames.length > 0 && (
+                              <div className="text-xs font-normal text-muted-foreground mt-0.5">
+                                {inv.guestNames.join(', ')}
+                              </div>
+                            )}
+                          </TableCell>
                           <TableCell>{inv.maxPasses}</TableCell>
                           <TableCell>
                             <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${status.className}`}>
