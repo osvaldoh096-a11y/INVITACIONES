@@ -1,6 +1,6 @@
 import prisma from './prisma';
 import { appendRsvpToSheet } from './sheets';
-import { sendRsvpConfirmationEmail } from './email';
+import { sendRsvpConfirmationEmail, sendOwnerNotificationEmail } from './email';
 import { hasQrCheckin } from './packages';
 import type { RsvpSubmitFormData } from './validations';
 
@@ -44,6 +44,18 @@ export async function createRsvpWithGuests(
       syncedAt: syncResult.ok ? new Date() : null,
       syncError: syncResult.ok ? null : syncResult.error,
     },
+  });
+
+  // Aviso a ti (el negocio) de que llegó una respuesta nueva — es solo un
+  // aviso, así que si falla no afecta el RSVP ya guardado.
+  await sendOwnerNotificationEmail({
+    eventName: event.eventName,
+    fullName: data.fullName,
+    attending: data.attending,
+    companionsCount: data.companionsCount,
+    phone: data.phone,
+    email: data.email,
+    message: data.message,
   });
 
   // Un QR único por persona confirmada (titular + cada acompañante) es

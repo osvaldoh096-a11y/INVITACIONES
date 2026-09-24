@@ -16,14 +16,26 @@ const READER_ID = 'qr-reader';
 // escaneando solo. También se puede saltar antes con el botón.
 const AUTO_RESUME_MS = 3000;
 
+interface GuestSearchResult {
+  id: string;
+  fullName: string;
+  checkedIn: boolean;
+  checkedInAt: string | null;
+  checkInCount: number;
+}
+
 export default function CheckIn({ eventCode }: { eventCode: string }) {
   const [eventName, setEventName] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [scan, setScan] = useState<ScanState>({ kind: 'idle' });
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<GuestSearchResult[]>([]);
+
   const scannerRef = useRef<any>(null);
   const busyRef = useRef(false);
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetch(`/api/events/${eventCode}`)
@@ -80,13 +92,27 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
       // si aún no había arrancado, no pasa nada
     }
 
+    await submitCheckIn({ qrToken });
+  }
+
+  // Registro manual por nombre — mismo resultado que escanear, para cuando
+  // el invitado llega sin su QR a la mano.
+  async function handleManualCheckIn(guestId: string) {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setSearchQuery('');
+    setSearchResults([]);
+    await submitCheckIn({ guestId });
+  }
+
+  async function submitCheckIn(payload: { qrToken?: string; guestId?: string }) {
     setScan({ kind: 'checking' });
 
     try {
       const res = await fetch(`/api/events/${eventCode}/checkin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qrToken }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
 
@@ -116,10 +142,36 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
 
   function resumeScanning() {
     if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
-    scannerRef.current?.resume();
+    try {
+      scannerRef.current?.resume();
+    } catch {
+      // no pasa nada si no estaba pausada (ej. venía de un registro manual)
+    }
     busyRef.current = false;
     setScan({ kind: 'idle' });
   }
+
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    if (searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/events/${eventCode}/guests?q=${encodeURIComponent(searchQuery.trim())}`,
+        );
+        const data = await res.json();
+        setSearchResults(data.guests || []);
+      } catch {
+        setSearchResults([]);
+      }
+    }, 300);
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, [searchQuery, eventCode]);
 
   const showResultOverlay = scan.kind === 'ok' || scan.kind === 'repeat' || scan.kind === 'error';
 
@@ -161,6 +213,34 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
           {scan.kind === 'checking' && 'Verificando...'}
         </div>
       )}
+
+      <div style={styles.searchBox}>
+        <p style={styles.searchLabel}>¿Llegó sin su QR? Busca su nombre</p>
+        <input
+          style={styles.searchInput}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Escribe el nombre..."
+        />
+        {searchResults.length > 0 && (
+          <div style={styles.searchResults}>
+            {searchResults.map((g) => (
+              <button
+                key={g.id}
+                style={styles.searchResultItem}
+                onClick={() => handleManualCheckIn(g.id)}
+              >
+                <span>{g.fullName}</span>
+                {g.checkedIn && (
+                  <span style={styles.searchResultBadge}>
+                    ya entró ({g.checkInCount}x)
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -224,4 +304,34 @@ const styles: Record<string, React.CSSProperties> = {
   overlayName: { fontSize: 26, fontWeight: 700 },
   overlayMessage: { fontSize: 16, opacity: 0.9 },
   overlayHint: { fontSize: 13, opacity: 0.7, marginTop: 12 },
+  searchBox: { marginTop: 20 },
+  searchLabel: { fontSize: 13, color: '#6b7280', margin: '0 0 6px' },
+  searchInput: {
+    width: '100%',
+    padding: '12px 14px',
+    borderRadius: 10,
+    border: '1px solid #d1d5db',
+    fontSize: 15,
+    boxSizing: 'border-box',
+  },
+  searchResults: {
+    marginTop: 8,
+    border: '1px solid #e5e7eb',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  searchResultItem: {
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '12px 14px',
+    background: 'white',
+    border: 'none',
+    borderBottom: '1px solid #f3f4f6',
+    fontSize: 15,
+    textAlign: 'left',
+    cursor: 'pointer',
+  },
+  searchResultBadge: { fontSize: 12, color: '#6b7280' },
 };

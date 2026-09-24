@@ -18,15 +18,15 @@ export const POST: APIRoute = async ({ params, request }) => {
     return new Response(JSON.stringify({ error: 'eventCode requerido' }), { status: 400, headers });
   }
 
-  let body: { qrToken?: string } = {};
+  let body: { qrToken?: string; guestId?: string } = {};
   try {
     body = await request.json();
   } catch {
-    // body vacío/malformado se maneja abajo como qrToken faltante
+    // body vacío/malformado se maneja abajo como faltante
   }
 
-  if (!body.qrToken) {
-    return new Response(JSON.stringify({ error: 'qrToken requerido' }), { status: 400, headers });
+  if (!body.qrToken && !body.guestId) {
+    return new Response(JSON.stringify({ error: 'qrToken o guestId requerido' }), { status: 400, headers });
   }
 
   const event = await prisma.eventProject.findUnique({ where: { eventCode } });
@@ -34,10 +34,17 @@ export const POST: APIRoute = async ({ params, request }) => {
     return new Response(JSON.stringify({ error: 'Evento no encontrado' }), { status: 404, headers });
   }
 
-  const guest = await prisma.rsvpGuest.findUnique({
-    where: { qrToken: body.qrToken },
-    include: { rsvp: { select: { eventId: true } } },
-  });
+  // Búsqueda manual por nombre (sin QR a la mano) usa guestId directo;
+  // el escaneo normal sigue usando el qrToken del código.
+  const guest = body.guestId
+    ? await prisma.rsvpGuest.findUnique({
+        where: { id: body.guestId },
+        include: { rsvp: { select: { eventId: true } } },
+      })
+    : await prisma.rsvpGuest.findUnique({
+        where: { qrToken: body.qrToken },
+        include: { rsvp: { select: { eventId: true } } },
+      });
 
   if (!guest || guest.rsvp.eventId !== event.id) {
     return new Response(
