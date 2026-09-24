@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import prisma from '../../../../lib/prisma';
 import { rsvpSubmitSchema } from '../../../../lib/validations';
-import { createRsvpWithGuests } from '../../../../lib/rsvp';
+import { createRsvpWithGuests, parseCompanionNames } from '../../../../lib/rsvp';
 
 /**
  * Endpoint PÚBLICO para el link personalizado de un invitado precargado
@@ -62,12 +62,15 @@ export const POST: APIRoute = async ({ params, request }) => {
     }
 
     const data = parsed.data;
-    const totalPeople = data.attending ? 1 + data.companionsCount : 0;
+    // Se valida contra los NOMBRES realmente escritos, no contra un número
+    // aparte que podría no coincidir (esa es la cuenta que de verdad
+    // decide cuántos QR se generan).
+    const totalPeople = data.attending ? 1 + parseCompanionNames(data.companionNames).length : 0;
 
     if (totalPeople > invitee.maxPasses) {
       return new Response(
         JSON.stringify({
-          error: `Tu invitación es para máximo ${invitee.maxPasses} persona(s) (contándote a ti). Ajusta el número de acompañantes.`,
+          error: `Tu invitación es para máximo ${invitee.maxPasses} persona(s) (contándote a ti). Ajusta los nombres de tus acompañantes.`,
         }),
         { status: 400, headers },
       );

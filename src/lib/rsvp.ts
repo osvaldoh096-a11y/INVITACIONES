@@ -5,6 +5,18 @@ import { hasQrCheckin } from './packages';
 import type { RsvpSubmitFormData } from './validations';
 
 /**
+ * Los nombres de acompañantes (texto libre separado por coma) son la
+ * única fuente de verdad de cuántas personas confirmadas hay — no un
+ * número aparte que el invitado podría dejar sin coincidir con los
+ * nombres que realmente escribió (ej. dice "3 acompañantes" pero solo
+ * escribe un nombre). Un QR se genera por cada nombre en esta lista, así
+ * que si no coinciden, es esta lista la que manda.
+ */
+export function parseCompanionNames(raw?: string | null): string[] {
+  return raw ? raw.split(',').map((n) => n.trim()).filter(Boolean) : [];
+}
+
+/**
  * Crea una respuesta RSVP completa: guarda el registro, intenta reflejarlo
  * en Sheets, genera un QR por cada persona confirmada (titular +
  * acompañantes) y manda el correo de respaldo si dejaron email.
@@ -18,6 +30,11 @@ export async function createRsvpWithGuests(
   data: RsvpSubmitFormData,
   origin: string,
 ) {
+  const companionNamesList = parseCompanionNames(data.companionNames);
+  // El companionsCount que se guarda siempre refleja los nombres reales
+  // dados, nunca un número declarado aparte que podría no coincidir.
+  const companionsCount = data.companionNames !== undefined ? companionNamesList.length : data.companionsCount;
+
   const rsvp = await prisma.rSVP.create({
     data: {
       eventId: event.id,
@@ -25,7 +42,7 @@ export async function createRsvpWithGuests(
       phone: data.phone || null,
       email: data.email || null,
       attending: data.attending,
-      companionsCount: data.companionsCount,
+      companionsCount,
       companionNames: data.companionNames || null,
       dietaryRestrictions: data.dietaryRestrictions || null,
       message: data.message || null,
@@ -52,22 +69,17 @@ export async function createRsvpWithGuests(
     eventName: event.eventName,
     fullName: data.fullName,
     attending: data.attending,
-    companionsCount: data.companionsCount,
+    companionsCount,
     phone: data.phone,
     email: data.email,
     message: data.message,
   });
 
   // Un QR único por persona confirmada (titular + cada acompañante) es
-  // exclusivo del paquete Grande — Básico y Medio no generan códigos de
-  // acceso, así que tampoco tiene sentido mandarles el correo con QR.
+  // exclusivo de Oro/Diamante — Plata no genera códigos de acceso, así que
+  // tampoco tiene sentido mandarles el correo con QR.
   const guestNames = data.attending && hasQrCheckin(event.packageTier)
-    ? [
-        data.fullName,
-        ...(data.companionNames
-          ? data.companionNames.split(',').map((n) => n.trim()).filter(Boolean)
-          : []),
-      ]
+    ? [data.fullName, ...companionNamesList]
     : [];
 
   let guests: { fullName: string; qrUrl: string }[] = [];

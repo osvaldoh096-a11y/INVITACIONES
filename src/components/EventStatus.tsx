@@ -411,7 +411,11 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
                               </div>
                             )}
                           </TableCell>
-                          <TableCell>{inv.maxPasses}</TableCell>
+                          <TableCell>
+                            {inv.status === 'confirmed'
+                              ? `${inv.guestNames.length} de ${inv.maxPasses}`
+                              : inv.maxPasses}
+                          </TableCell>
                           <TableCell>
                             <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${status.className}`}>
                               {status.text}

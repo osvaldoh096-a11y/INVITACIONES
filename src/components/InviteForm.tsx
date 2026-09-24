@@ -24,9 +24,15 @@ export default function InviteForm({ inviteCode }: { inviteCode: string }) {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [attending, setAttending] = useState(true);
-  const [companionsCount, setCompanionsCount] = useState(0);
   const [companionNames, setCompanionNames] = useState('');
   const [message, setMessage] = useState('');
+
+  // Los nombres escritos SON el conteo — nada de un número aparte que
+  // pueda no coincidir con lo que realmente se escribió.
+  const companionNamesList = companionNames
+    .split(',')
+    .map((n) => n.trim())
+    .filter(Boolean);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -47,6 +53,14 @@ export default function InviteForm({ inviteCode }: { inviteCode: string }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (attending && companionNamesList.length > maxCompanions) {
+      setSubmitError(
+        `Tu invitación es para máximo ${info?.invitee.maxPasses} persona(s) (contándote a ti). Quita algún nombre.`,
+      );
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError('');
 
@@ -59,7 +73,6 @@ export default function InviteForm({ inviteCode }: { inviteCode: string }) {
           phone: phone || undefined,
           email: email || undefined,
           attending,
-          companionsCount: attending ? companionsCount : 0,
           companionNames: attending && companionNames ? companionNames : undefined,
           message: message || undefined,
         }),
@@ -175,34 +188,21 @@ export default function InviteForm({ inviteCode }: { inviteCode: string }) {
             </div>
 
             {attending && maxCompanions > 0 && (
-              <>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Acompañantes (máximo {maxCompanions})
-                  </label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={maxCompanions}
-                    value={companionsCount}
-                    onChange={(e) =>
-                      setCompanionsCount(
-                        Math.min(maxCompanions, Math.max(0, Number(e.target.value) || 0)),
-                      )
-                    }
-                  />
-                </div>
-                {companionsCount > 0 && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Nombres de tus acompañantes</label>
-                    <Input
-                      value={companionNames}
-                      onChange={(e) => setCompanionNames(e.target.value)}
-                      placeholder="Separados por coma"
-                    />
-                  </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Nombres de tus acompañantes (máximo {maxCompanions})
+                </label>
+                <Input
+                  value={companionNames}
+                  onChange={(e) => setCompanionNames(e.target.value)}
+                  placeholder="Separados por coma, o déjalo vacío si vienes solo"
+                />
+                {companionNamesList.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {companionNamesList.length} acompañante(s): {companionNamesList.join(', ')}
+                  </p>
                 )}
-              </>
+              </div>
             )}
 
             <div className="space-y-2">
