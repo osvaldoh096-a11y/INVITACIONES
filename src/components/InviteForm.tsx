@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface InviteInfo {
   invitee: { displayName: string; maxPasses: number; status: string };
@@ -144,7 +145,7 @@ export default function InviteForm({ inviteCode }: { inviteCode: string }) {
         <h1 className="text-2xl font-semibold">{info.event.eventName}</h1>
         {info.event.eventDate && (
           <p className="text-muted-foreground">
-            {format(new Date(info.event.eventDate), 'PPP')}
+            {format(new Date(info.event.eventDate), 'PPP', { locale: es })}
             {info.event.location && ` — ${info.event.location}`}
           </p>
         )}

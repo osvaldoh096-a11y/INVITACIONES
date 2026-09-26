@@ -12,6 +12,7 @@ import {
 } from './ui/table';
 import { Download, Check, X } from 'lucide-react';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import type { RSVP } from '../lib/validations';
 import { rsvpService } from '../lib/api';
 
@@ -179,7 +180,7 @@ export default function RSVPList({ eventCode }: RSVPListProps) {
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(rsvp.createdAt), 'PPp')}
+                        {format(new Date(rsvp.createdAt), 'PPp', { locale: es })}
                       </TableCell>
                     </TableRow>
                   ))}

@@ -11,6 +11,7 @@ import {
   TableRow,
 } from './ui/table';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { QrCode, Copy, MessageCircle, Trash2, UserPlus } from 'lucide-react';
 import { hasQrCheckin, hasInviteeList } from '../lib/packages';
@@ -276,7 +277,7 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
       <div>
         <h1 className="text-2xl font-semibold">{event.eventName}</h1>
         <p className="text-muted-foreground">
-          {event.eventDate && format(new Date(event.eventDate), 'PPP')}
+          {event.eventDate && format(new Date(event.eventDate), 'PPP', { locale: es })}
           {event.location && ` — ${event.location}`}
         </p>
       </div>
