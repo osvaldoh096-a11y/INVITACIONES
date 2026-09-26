@@ -462,8 +462,6 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
                   <TableRow>
                     <TableHead>Invitado</TableHead>
                     <TableHead>Asiste</TableHead>
-                    <TableHead>Acompañantes</TableHead>
-                    <TableHead>Restricciones</TableHead>
                     <TableHead>Mensaje</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -480,12 +478,6 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
                           {rsvp.attending ? 'Sí' : 'No'}
                         </span>
                       </TableCell>
-                      <TableCell>
-                        {rsvp.companionsCount > 0
-                          ? `${rsvp.companionsCount} (${rsvp.companionNames || 'sin nombre'})`
-                          : '-'}
-                      </TableCell>
-                      <TableCell>{rsvp.dietaryRestrictions || '-'}</TableCell>
                       <TableCell className="max-w-xs truncate">{rsvp.message || '-'}</TableCell>
                     </TableRow>
                   ))}
