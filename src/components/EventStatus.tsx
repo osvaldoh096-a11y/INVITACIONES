@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { QrCode, Copy, MessageCircle, Trash2, UserPlus } from 'lucide-react';
 import { hasQrCheckin, hasInviteeList } from '../lib/packages';
+import { buildGenericInviteMessage, buildPersonalizedInviteMessage } from '../lib/inviteMessage';
 
 interface StatusRsvp {
   id: string;
@@ -53,6 +54,7 @@ interface StatusData {
     location: string | null;
     packageTier: string;
     framerUrl: string | null;
+    inviteMessageTemplate: string | null;
   };
   analytics: {
     total: number;
@@ -62,13 +64,6 @@ interface StatusData {
     totalGuestsConfirmed: number;
   };
   rsvps: StatusRsvp[];
-}
-
-// Mensaje genérico para Plata: como no hay lista de invitados personalizada,
-// el cliente manda el mismo link a todos — este texto listo evita que
-// tenga que redactarlo o pegar el link a mano.
-function inviteMessage(eventName: string, framerUrl: string): string {
-  return `¡Hola! Queremos invitarte a ${eventName} :) Por favor confirma tu asistencia o tu no asistencia, ¡muchas gracias!!\n${framerUrl}`;
 }
 
 export default function EventStatus({ eventCode }: { eventCode: string }) {
@@ -209,7 +204,15 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
 
   const sendInviteWhatsApp = async (invitee: ClientInvitee) => {
     const text = encodeURIComponent(
-      `¡Hola ${invitee.displayName}! Aquí está tu invitación, tienen ${invitee.maxPasses} pase(s) asignado(s): ${inviteUrl(invitee.inviteCode)}`,
+      buildPersonalizedInviteMessage(
+        {
+          eventName: data?.event.eventName ?? '',
+          displayName: invitee.displayName,
+          maxPasses: invitee.maxPasses,
+          link: inviteUrl(invitee.inviteCode),
+        },
+        data?.event.inviteMessageTemplate,
+      ),
     );
     const phoneDigits = invitee.phone?.replace(/\D/g, '') || '';
     const url = phoneDigits ? `https://wa.me/${phoneDigits}?text=${text}` : `https://wa.me/?text=${text}`;
@@ -294,12 +297,14 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
                   familiares, redes) — todos usan el mismo link para confirmar.
                 </p>
                 <div className="p-3 rounded-md bg-muted text-sm whitespace-pre-wrap">
-                  {inviteMessage(event.eventName, event.framerUrl)}
+                  {buildGenericInviteMessage(event.eventName, event.framerUrl, event.inviteMessageTemplate)}
                 </div>
                 <Button
                   variant="outline"
                   onClick={() => {
-                    navigator.clipboard.writeText(inviteMessage(event.eventName, event.framerUrl!));
+                    navigator.clipboard.writeText(
+                      buildGenericInviteMessage(event.eventName, event.framerUrl!, event.inviteMessageTemplate),
+                    );
                     toast.success('Mensaje copiado');
                   }}
                 >

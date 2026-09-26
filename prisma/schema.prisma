@@ -52,6 +52,13 @@ model EventProject {
   // al diseño real — útil solo para pruebas antes de que exista el sitio.
   framerUrl String?
 
+  // Plantilla del mensaje que el cliente copia/manda a sus invitados.
+  // Soporta los tokens {evento}, {nombre}, {pases} y {link} — si no
+  // incluye {link}, se agrega solo al final. Si está vacía, se usa un
+  // mensaje por defecto (distinto según si el evento tiene lista de
+  // invitados o no).
+  inviteMessageTemplate String?
+
   createdById String
   createdBy   AdminUser @relation(fields: [createdById], references: [id])
 

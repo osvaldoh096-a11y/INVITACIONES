@@ -64,6 +64,7 @@ export const POST: APIRoute = async ({ params, request }) => {
         location: event.location,
         packageTier: event.packageTier,
         framerUrl: event.framerUrl,
+        inviteMessageTemplate: event.inviteMessageTemplate,
       },
       analytics: {
         total: rsvps.length,

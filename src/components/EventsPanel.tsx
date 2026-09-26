@@ -93,6 +93,7 @@ export default function EventsPanel({ onSelectEvent }: EventsPanelProps) {
         location: editTarget.location ?? '',
         accessPassword: editTarget.accessPassword ?? '',
         framerUrl: editTarget.framerUrl ?? '',
+        inviteMessageTemplate: editTarget.inviteMessageTemplate ?? '',
       });
     }
   }, [editTarget]);
@@ -274,8 +275,22 @@ export default function EventsPanel({ onSelectEvent }: EventsPanelProps) {
                 errors={errors}
               />
               <p className="text-xs text-muted-foreground -mt-2">
-                Solo aplica a Oro/Diamante: es a dónde apuntan los links personalizados de la
-                lista de invitados. Si la dejas vacía, usan una página de respaldo propia.
+                A dónde apuntan los links de invitados (Oro/Diamante) o el mensaje genérico
+                (Plata). Si la dejas vacía, usan una página de respaldo propia.
+              </p>
+
+              <FormField
+                label="Mensaje predeterminado para invitados (opcional)"
+                name="inviteMessageTemplate"
+                multiline
+                rows={3}
+                placeholder="Déjalo vacío para usar el mensaje por defecto"
+                register={register}
+                errors={errors}
+              />
+              <p className="text-xs text-muted-foreground -mt-2">
+                Tokens disponibles: {'{evento}'}, {'{link}'} y (solo Oro/Diamante) {'{nombre}'},{' '}
+                {'{pases}'}. Si no incluyes {'{link}'}, se agrega solo al final.
               </p>
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
@@ -477,6 +492,20 @@ export default function EventsPanel({ onSelectEvent }: EventsPanelProps) {
               register={registerEdit}
               errors={editErrors}
             />
+
+            <FormField
+              label="Mensaje predeterminado para invitados (opcional)"
+              name="inviteMessageTemplate"
+              multiline
+              rows={3}
+              placeholder="Déjalo vacío para usar el mensaje por defecto"
+              register={registerEdit}
+              errors={editErrors}
+            />
+            <p className="text-xs text-muted-foreground -mt-2">
+              Tokens disponibles: {'{evento}'}, {'{link}'} y (solo Oro/Diamante) {'{nombre}'},{' '}
+              {'{pases}'}. Si no incluyes {'{link}'}, se agrega solo al final.
+            </p>
 
             <Button type="submit" className="w-full" disabled={isEditSubmitting}>
               {isEditSubmitting ? 'Guardando...' : 'Guardar cambios'}
