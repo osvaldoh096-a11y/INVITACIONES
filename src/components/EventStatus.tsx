@@ -64,6 +64,13 @@ interface StatusData {
   rsvps: StatusRsvp[];
 }
 
+// Mensaje genérico para Plata: como no hay lista de invitados personalizada,
+// el cliente manda el mismo link a todos — este texto listo evita que
+// tenga que redactarlo o pegar el link a mano.
+function inviteMessage(eventName: string, framerUrl: string): string {
+  return `¡Hola! Queremos invitarte a ${eventName} :) Por favor confirma tu asistencia o tu no asistencia, ¡muchas gracias!!\n${framerUrl}`;
+}
+
 export default function EventStatus({ eventCode }: { eventCode: string }) {
   const [data, setData] = useState<StatusData | null>(null);
   const [needsPassword, setNeedsPassword] = useState(false);
@@ -271,7 +278,46 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {!hasInviteeList(event.packageTier) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              Mensaje para invitar
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {event.framerUrl ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Copia este mensaje y mándaselo a quien quieras invitar (WhatsApp, grupos
+                  familiares, redes) — todos usan el mismo link para confirmar.
+                </p>
+                <div className="p-3 rounded-md bg-muted text-sm whitespace-pre-wrap">
+                  {inviteMessage(event.eventName, event.framerUrl)}
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(inviteMessage(event.eventName, event.framerUrl!));
+                    toast.success('Mensaje copiado');
+                  }}
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copiar mensaje
+                </Button>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Todavía no tienes el link de tu invitación configurado. Pídeselo a quien te
+                vendió el servicio para generar aquí tu mensaje listo para compartir.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total respuestas</CardTitle>
@@ -296,14 +342,16 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
             <div className="text-3xl font-bold text-red-600">{analytics.totalDeclined}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total personas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{analytics.totalGuestsConfirmed}</div>
-          </CardContent>
-        </Card>
+        {hasInviteeList(event.packageTier) && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total personas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{analytics.totalGuestsConfirmed}</div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {hasQrCheckin(event.packageTier) && (
