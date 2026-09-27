@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { isCheckinWindowOpen } from '../lib/packages';
 
 type ScanState =
   | { kind: 'idle' }
@@ -26,6 +27,8 @@ interface GuestSearchResult {
 
 export default function CheckIn({ eventCode }: { eventCode: string }) {
   const [eventName, setEventName] = useState<string | null>(null);
+  const [windowOpen, setWindowOpen] = useState<boolean | null>(null);
+  const [activationDate, setActivationDate] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [scan, setScan] = useState<ScanState>({ kind: 'idle' });
 
@@ -40,11 +43,21 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
   useEffect(() => {
     fetch(`/api/events/${eventCode}`)
       .then((r) => r.json())
-      .then((d) => setEventName(d.event?.eventName ?? null))
-      .catch(() => {});
+      .then((d) => {
+        setEventName(d.event?.eventName ?? null);
+        setWindowOpen(isCheckinWindowOpen(d.event?.eventDate ?? null));
+        if (d.event?.eventDate) {
+          const activation = new Date(
+            new Date(d.event.eventDate).getTime() - 3 * 24 * 60 * 60 * 1000,
+          );
+          setActivationDate(activation.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' }));
+        }
+      })
+      .catch(() => setWindowOpen(true)); // si falla la consulta, no bloqueamos el check-in por eso
   }, [eventCode]);
 
   useEffect(() => {
+    if (windowOpen !== true) return; // espera a saber la fecha, o no activa la cámara si aún no toca
     let cancelled = false;
 
     import('html5-qrcode').then(({ Html5Qrcode }) => {
@@ -78,7 +91,7 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventCode]);
+  }, [eventCode, windowOpen]);
 
   async function handleScan(qrToken: string) {
     if (busyRef.current) return; // ya está pausado mostrando un resultado
@@ -174,6 +187,22 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
   }, [searchQuery, eventCode]);
 
   const showResultOverlay = scan.kind === 'ok' || scan.kind === 'repeat' || scan.kind === 'error';
+
+  if (windowOpen === false) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.header}>
+          <h1 style={styles.title}>Check-in</h1>
+          {eventName && <p style={styles.subtitle}>{eventName}</p>}
+        </div>
+        <div style={styles.banner}>
+          Este lector se activa 3 días antes del evento
+          {activationDate ? ` (a partir del ${activationDate})` : ''}.
+        </div>
+        <p style={styles.brand}>con·pase</p>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.page}>

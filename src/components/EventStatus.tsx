@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { QrCode, Copy, MessageCircle, Trash2, UserPlus } from 'lucide-react';
-import { hasQrCheckin, hasInviteeList } from '../lib/packages';
+import { hasQrCheckin, hasInviteeList, isCheckinWindowOpen } from '../lib/packages';
 import { buildGenericInviteMessage, buildPersonalizedInviteMessage } from '../lib/inviteMessage';
 
 interface StatusRsvp {
@@ -375,27 +375,38 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Este link abre la cámara para escanear los boletos QR de tus invitados en la
-              entrada. Úsalo tú mismo o pásaselo a quien reciba ese día — no necesita
-              contraseña.
-            </p>
-            <div className="flex gap-2">
-              <Input readOnly value={`${window.location.origin}/checkin/${event.eventCode}`} />
-              <Button
-                variant="outline"
-                onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/checkin/${event.eventCode}`);
-                  toast.success('Link copiado');
-                }}
-                title="Copiar link"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <a href={`/checkin/${event.eventCode}`} target="_blank" rel="noreferrer">
-                <Button>Abrir</Button>
-              </a>
-            </div>
+            {isCheckinWindowOpen(event.eventDate) ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Este link abre la cámara para escanear los boletos QR de tus invitados en la
+                  entrada. Úsalo tú mismo o pásaselo a quien reciba ese día — no necesita
+                  contraseña.
+                </p>
+                <div className="flex gap-2">
+                  <Input readOnly value={`${window.location.origin}/checkin/${event.eventCode}`} />
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/checkin/${event.eventCode}`);
+                      toast.success('Link copiado');
+                    }}
+                    title="Copiar link"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <a href={`/checkin/${event.eventCode}`} target="_blank" rel="noreferrer">
+                    <Button>Abrir</Button>
+                  </a>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Este lector se activa 3 días antes de tu evento
+                {event.eventDate &&
+                  ` (a partir del ${format(new Date(new Date(event.eventDate).getTime() - 3 * 24 * 60 * 60 * 1000), 'PPP', { locale: es })})`}
+                . Vuelve entonces para conseguir el link.
+              </p>
+            )}
           </CardContent>
         </Card>
       )}

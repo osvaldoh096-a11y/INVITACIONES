@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import prisma from '../../../../lib/prisma';
+import { isCheckinWindowOpen } from '../../../../lib/packages';
 
 // Endpoint PÚBLICO (sin login) para marcar la entrada de un invitado el día
 // del evento. A propósito no pide contraseña: el negocio no controla el
@@ -32,6 +33,15 @@ export const POST: APIRoute = async ({ params, request }) => {
   const event = await prisma.eventProject.findUnique({ where: { eventCode } });
   if (!event || !event.isPublished) {
     return new Response(JSON.stringify({ error: 'Evento no encontrado' }), { status: 404, headers });
+  }
+
+  // El check-in se activa 3 días antes del evento, sin importar si alguien
+  // ya tiene el link — evita escaneos de prueba semanas antes.
+  if (!isCheckinWindowOpen(event.eventDate)) {
+    return new Response(
+      JSON.stringify({ error: 'El check-in se activa 3 días antes del evento.' }),
+      { status: 403, headers },
+    );
   }
 
   // Búsqueda manual por nombre (sin QR a la mano) usa guestId directo;

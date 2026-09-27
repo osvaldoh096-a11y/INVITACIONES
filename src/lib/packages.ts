@@ -59,3 +59,18 @@ export function hasQrCheckin(tier: string): boolean {
   const t = normalizeTier(tier);
   return t === 'medio' || t === 'grande';
 }
+
+const CHECKIN_ACTIVATION_DAYS = 3;
+
+/**
+ * El check-in se activa 3 días antes de la fecha del evento — evita
+ * escaneos de prueba o accidentales semanas antes, cuando todavía no hay
+ * nadie en la puerta. Si el evento no tiene fecha registrada, no hay forma
+ * de calcular la ventana, así que se deja abierto (mejor eso que bloquear
+ * un evento real por un dato faltante).
+ */
+export function isCheckinWindowOpen(eventDate: Date | string | null | undefined): boolean {
+  if (!eventDate) return true;
+  const activationTime = new Date(eventDate).getTime() - CHECKIN_ACTIVATION_DAYS * 24 * 60 * 60 * 1000;
+  return Date.now() >= activationTime;
+}
