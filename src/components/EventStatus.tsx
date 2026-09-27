@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Table,
   TableBody,
@@ -121,7 +122,7 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
   const [newExtraPasses, setNewExtraPasses] = useState(0);
   const [newPhone, setNewPhone] = useState('');
   const [addingInvitee, setAddingInvitee] = useState(false);
-  const [onlyPendingConfirm, setOnlyPendingConfirm] = useState(false);
+  const [inviteeFilter, setInviteeFilter] = useState<'todos' | 'no_confirmado' | 'no_asistira' | 'confirmado'>('todos');
 
   const loadInvitees = async (accessPassword?: string) => {
     try {
@@ -448,15 +449,17 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
 
             {invitees.length > 0 && (
               <div className="space-y-3">
-                <Button
-                  size="sm"
-                  variant={onlyPendingConfirm ? 'default' : 'outline'}
-                  onClick={() => setOnlyPendingConfirm((v) => !v)}
-                >
-                  {onlyPendingConfirm
-                    ? 'Ver todos'
-                    : `Falta confirmar (${invitees.filter((i) => i.status === 'sent').length})`}
-                </Button>
+                <Select value={inviteeFilter} onValueChange={(v) => setInviteeFilter(v as typeof inviteeFilter)}>
+                  <SelectTrigger className="w-56">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="no_confirmado">No ha confirmado</SelectItem>
+                    <SelectItem value="confirmado">Confirmado</SelectItem>
+                    <SelectItem value="no_asistira">No asistirá</SelectItem>
+                  </SelectContent>
+                </Select>
                 <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -470,7 +473,12 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
                   </TableHeader>
                   <TableBody>
                     {invitees
-                      .filter((inv) => !onlyPendingConfirm || inv.status === 'sent')
+                      .filter((inv) => {
+                        if (inviteeFilter === 'todos') return true;
+                        if (inviteeFilter === 'confirmado') return inv.status === 'confirmed';
+                        if (inviteeFilter === 'no_asistira') return inv.status === 'declined';
+                        return inv.status === 'pending' || inv.status === 'sent';
+                      })
                       .map((inv) => {
                       const status = INVITEE_STATUS_LABEL[inv.status] ?? INVITEE_STATUS_LABEL.pending;
                       return (
