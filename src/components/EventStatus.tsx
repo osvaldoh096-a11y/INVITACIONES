@@ -116,7 +116,8 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
   // --- Lista de invitados: autogestión por el cliente, sin login ---
   const [invitees, setInvitees] = useState<ClientInvitee[]>([]);
   const [newName, setNewName] = useState('');
-  const [newPasses, setNewPasses] = useState(1);
+  // Pases EXTRA (sin contar al titular, que siempre va incluido).
+  const [newExtraPasses, setNewExtraPasses] = useState(0);
   const [newPhone, setNewPhone] = useState('');
   const [addingInvitee, setAddingInvitee] = useState(false);
 
@@ -143,8 +144,8 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
 
   const handleAddInvitee = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim() || newPasses < 1) {
-      toast.error('Escribe el nombre y al menos 1 pase');
+    if (!newName.trim() || newExtraPasses < 0) {
+      toast.error('Escribe el nombre');
       return;
     }
     setAddingInvitee(true);
@@ -155,7 +156,7 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
         body: JSON.stringify({
           accessPassword: password || undefined,
           displayName: newName.trim(),
-          maxPasses: newPasses,
+          maxPasses: newExtraPasses + 1, // +1 por el titular, que siempre va incluido
           phone: newPhone.trim() || undefined,
         }),
       });
@@ -163,7 +164,7 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
       if (!res.ok) throw new Error(result.error);
       toast.success('Invitado agregado');
       setNewName('');
-      setNewPasses(1);
+      setNewExtraPasses(0);
       setNewPhone('');
       loadInvitees(password || undefined);
     } catch (err) {
@@ -396,9 +397,9 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
           </CardHeader>
           <CardContent className="space-y-6">
             <p className="text-sm text-muted-foreground">
-              Agrega aquí a cada persona o familia que quieras invitar, con cuántos pases le
-              corresponden. A cada uno le generamos un link personalizado que puedes copiar o
-              mandar directo por WhatsApp.
+              Agrega aquí a cada persona o familia que quieras invitar. Los "pases extra" son
+              acompañantes, sin contar al titular — él ya va incluido siempre. A cada uno le
+              generamos un link personalizado que puedes copiar o mandar directo por WhatsApp.
             </p>
 
             <form onSubmit={handleAddInvitee} className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1.5fr_auto] gap-2 items-end">
@@ -411,13 +412,13 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Pases</label>
+                <label className="text-xs font-medium text-muted-foreground">Pases extra</label>
                 <Input
                   type="number"
-                  min={1}
-                  max={20}
-                  value={newPasses}
-                  onChange={(e) => setNewPasses(Math.max(1, Number(e.target.value) || 1))}
+                  min={0}
+                  max={19}
+                  value={newExtraPasses}
+                  onChange={(e) => setNewExtraPasses(Math.max(0, Number(e.target.value) || 0))}
                 />
               </div>
               <div className="space-y-1">
@@ -439,7 +440,7 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Invitado</TableHead>
-                      <TableHead>Pases</TableHead>
+                      <TableHead>Pases extra</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
@@ -459,8 +460,8 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
                           </TableCell>
                           <TableCell>
                             {inv.status === 'confirmed'
-                              ? `${inv.guestNames.length} de ${inv.maxPasses}`
-                              : inv.maxPasses}
+                              ? `${inv.guestNames.length - 1} de ${inv.maxPasses - 1}`
+                              : inv.maxPasses - 1}
                           </TableCell>
                           <TableCell>
                             <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${status.className}`}>
