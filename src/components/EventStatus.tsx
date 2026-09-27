@@ -121,6 +121,7 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
   const [newExtraPasses, setNewExtraPasses] = useState(0);
   const [newPhone, setNewPhone] = useState('');
   const [addingInvitee, setAddingInvitee] = useState(false);
+  const [onlyPendingConfirm, setOnlyPendingConfirm] = useState(false);
 
   const loadInvitees = async (accessPassword?: string) => {
     try {
@@ -334,6 +335,16 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
             <div className="text-3xl font-bold text-green-600">{analytics.totalAttending}</div>
           </CardContent>
         </Card>
+        {hasInviteeList(event.packageTier) && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Acompañantes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{analytics.totalCompanions}</div>
+            </CardContent>
+          </Card>
+        )}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">No asistirán</CardTitle>
@@ -343,24 +354,14 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
           </CardContent>
         </Card>
         {hasInviteeList(event.packageTier) && (
-          <>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Acompañantes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{analytics.totalCompanions}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total personas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{analytics.totalGuestsConfirmed}</div>
-              </CardContent>
-            </Card>
-          </>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total personas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{analytics.totalGuestsConfirmed}</div>
+            </CardContent>
+          </Card>
         )}
       </div>
 
@@ -446,7 +447,17 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
             </form>
 
             {invitees.length > 0 && (
-              <div className="overflow-x-auto">
+              <div className="space-y-3">
+                <Button
+                  size="sm"
+                  variant={onlyPendingConfirm ? 'default' : 'outline'}
+                  onClick={() => setOnlyPendingConfirm((v) => !v)}
+                >
+                  {onlyPendingConfirm
+                    ? 'Ver todos'
+                    : `Falta confirmar (${invitees.filter((i) => i.status === 'sent').length})`}
+                </Button>
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -458,7 +469,9 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {invitees.map((inv) => {
+                    {invitees
+                      .filter((inv) => !onlyPendingConfirm || inv.status === 'sent')
+                      .map((inv) => {
                       const status = INVITEE_STATUS_LABEL[inv.status] ?? INVITEE_STATUS_LABEL.pending;
                       return (
                         <TableRow key={inv.id}>
@@ -499,6 +512,7 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
                     })}
                   </TableBody>
                 </Table>
+                </div>
               </div>
             )}
           </CardContent>
