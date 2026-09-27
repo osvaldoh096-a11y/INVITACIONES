@@ -37,6 +37,7 @@ interface ClientInvitee {
   status: string;
   isGeneric: boolean;
   guestNames: string[];
+  email: string | null;
 }
 
 const INVITEE_STATUS_LABEL: Record<string, { text: string; className: string }> = {
@@ -324,7 +325,7 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
         </Card>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">Confirmados</CardTitle>
@@ -342,14 +343,24 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
           </CardContent>
         </Card>
         {hasInviteeList(event.packageTier) && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total personas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{analytics.totalGuestsConfirmed}</div>
-            </CardContent>
-          </Card>
+          <>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Acompañantes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{analytics.totalCompanions}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total personas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{analytics.totalGuestsConfirmed}</div>
+              </CardContent>
+            </Card>
+          </>
         )}
       </div>
 
@@ -441,6 +452,7 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
                     <TableRow>
                       <TableHead>Invitado</TableHead>
                       <TableHead>Pases extra</TableHead>
+                      <TableHead>Correo</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
@@ -463,6 +475,7 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
                               ? `${inv.guestNames.length - 1} de ${inv.maxPasses - 1}`
                               : inv.maxPasses - 1}
                           </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{inv.email || '-'}</TableCell>
                           <TableCell>
                             <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${status.className}`}>
                               {status.text}

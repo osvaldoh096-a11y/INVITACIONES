@@ -61,15 +61,19 @@ export const POST: APIRoute = async ({ params, request }) => {
       inviteCode: true,
       status: true,
       isGeneric: true,
-      rsvp: { select: { guests: { select: { fullName: true } } } },
+      rsvp: { select: { email: true, guests: { select: { fullName: true } } } },
     },
   });
 
   // Aplana los nombres de cada persona confirmada (titular + acompañantes)
   // para que el cliente vea quién exactamente viene, no solo el conteo.
+  // El correo es el que la persona dejó AL CONFIRMAR (donde le llegaron sus
+  // pases) — útil para que el cliente o el wedding planner sepa a dónde se
+  // mandó, sin tener que pedírselo aparte.
   const result = invitees.map(({ rsvp, ...rest }) => ({
     ...rest,
     guestNames: rsvp?.guests.map((g) => g.fullName) ?? [],
+    email: rsvp?.email ?? null,
   }));
 
   return new Response(JSON.stringify({ invitees: result }), { status: 200, headers: headers() });
