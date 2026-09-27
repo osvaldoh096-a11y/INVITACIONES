@@ -570,6 +570,11 @@ export default function EventStatus({ eventCode }: { eventCode: string }) {
         </CardContent>
       </Card>
       )}
+
+      <div className="text-center pt-4">
+        <p className="brand-wordmark text-lg text-gray-400">con·pase</p>
+        <p className="text-xs text-gray-400">Invitaciones digitales con una plataforma inteligente</p>
+      </div>
     </div>
   );
 }

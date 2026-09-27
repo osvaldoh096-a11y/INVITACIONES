@@ -24,7 +24,10 @@ export default function AdminDashboard() {
       <header className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-bold text-gray-900">Panel de eventos</h1>
+            <div className="flex items-baseline gap-3">
+              <h1 className="brand-wordmark text-2xl text-gray-900">con·pase</h1>
+              <span className="text-sm text-gray-400">Panel de administrador</span>
+            </div>
             <Button variant="ghost" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Salir
