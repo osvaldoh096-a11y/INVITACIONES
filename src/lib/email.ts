@@ -55,6 +55,7 @@ function buildHtml(eventName: string, guests: QrGuest[]): string {
       <h2 style="color:#111827;">¡Confirmación recibida!</h2>
       <p style="color:#374151;">Guarda este correo o toma captura de tu(s) código(s) QR — te lo(s) pedirán en el acceso a <strong>${eventName}</strong>.</p>
       <table width="100%" cellpadding="0" cellspacing="0">${cards}</table>
+      <p style="text-align:center;margin-top:32px;font-family:Georgia,'Times New Roman',serif;font-style:italic;color:#9ca3af;font-size:15px;">con·pase</p>
     </div>`;
 }
 

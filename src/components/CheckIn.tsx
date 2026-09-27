@@ -241,6 +241,8 @@ export default function CheckIn({ eventCode }: { eventCode: string }) {
           </div>
         )}
       </div>
+
+      <p style={styles.brand}>con·pase</p>
     </div>
   );
 }
@@ -334,4 +336,12 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
   searchResultBadge: { fontSize: 12, color: '#6b7280' },
+  brand: {
+    textAlign: 'center',
+    marginTop: 32,
+    fontFamily: "'Playfair Display', serif",
+    fontStyle: 'italic',
+    color: '#9ca3af',
+    fontSize: 16,
+  },
 };

@@ -16,6 +16,14 @@ interface QrGuest {
   qrUrl: string;
 }
 
+function Brand() {
+  return (
+    <div className="text-center pt-8">
+      <p className="brand-wordmark text-base text-muted-foreground">con·pase</p>
+    </div>
+  );
+}
+
 export default function InviteForm({ inviteCode }: { inviteCode: string }) {
   const [info, setInfo] = useState<InviteInfo | null>(null);
   const [loadError, setLoadError] = useState('');
@@ -94,11 +102,21 @@ export default function InviteForm({ inviteCode }: { inviteCode: string }) {
   }
 
   if (loading) {
-    return <div className="text-center py-16 text-muted-foreground">Cargando invitación...</div>;
+    return (
+      <div className="text-center py-16 text-muted-foreground">
+        Cargando invitación...
+        <Brand />
+      </div>
+    );
   }
 
   if (loadError || !info) {
-    return <div className="text-center py-16 text-muted-foreground">{loadError}</div>;
+    return (
+      <div className="text-center py-16 text-muted-foreground">
+        {loadError}
+        <Brand />
+      </div>
+    );
   }
 
   if (info.invitee.status === 'confirmed' && !guests) {
@@ -108,6 +126,7 @@ export default function InviteForm({ inviteCode }: { inviteCode: string }) {
         <p className="text-muted-foreground mt-2">
           Si crees que es un error, contacta a quien te invitó.
         </p>
+        <Brand />
       </div>
     );
   }
@@ -135,6 +154,7 @@ export default function InviteForm({ inviteCode }: { inviteCode: string }) {
         ) : (
           <p className="text-muted-foreground">Lamentamos que no puedas acompañarnos.</p>
         )}
+        <Brand />
       </div>
     );
   }
@@ -219,6 +239,7 @@ export default function InviteForm({ inviteCode }: { inviteCode: string }) {
           </form>
         </CardContent>
       </Card>
+      <Brand />
     </div>
   );
 }
